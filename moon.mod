@@ -1,15 +1,15 @@
-name = "moonbitstack/CHANGE-ME"
+name = "moonbitstack/moonfory"
 
 version = "0.1.0"
 
 readme = "README.md"
 
-repository = "https://github.com/moonbitstack/CHANGE-ME"
+repository = "https://github.com/moonbitstack/moonfory"
 
 license = "Apache-2.0"
 
-keywords = [ "moonbit" ]
+keywords = [ "serialization", "fory", "cross-language", "binary", "moonbit" ]
 
-description = "One sentence saying what this is and what it is not."
+description = "moonfory — Apache Fory for MoonBit: the cross-language binary format, the row format, and the type mapping that lets a MoonBit value arrive in Java, Go or Python as itself."
 
 preferred_target = "wasm-gc"

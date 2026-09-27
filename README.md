@@ -1,59 +1,47 @@
-# CHANGE-ME
+# moonfory
 
-One sentence saying what this is.
+A MoonBit value, written so that Java, Go or Python reads it back as its own.
 
-```moonbit
-@lib.greet("moonbit")
-```
+> **Status: planned.** The repository is set up; nothing is
+> implemented yet.
 
-Run `moon run examples/tour` for the whole surface in one go.
+[Apache Fory](https://github.com/apache/fory) is a cross-language serialization
+framework, and — the part that matters here — **its wire formats are specified
+apart from any one implementation**. That makes it something to implement, not
+something to bind to.
 
-## Starting from this template
-
-1. `gh repo create moonbitstack/<name> --template moonbitstack/moonkit --public`
-2. Replace `CHANGE-ME` everywhere: `moon.mod` (name and repository), the two
-   `moon.pkg` files that import `lib`, and this file's title.
-3. Delete `bin/` if the repository ships no binary; delete `lib/` if it ships
-   only a binary. Most repositories here keep `lib/` and rename it to whatever
-   the package actually is — `base64/`, `sha2/`, `jwt/` — because a package is
-   named after what it does, not after its role.
-4. Fill in `keywords` and `description` in `moon.mod`. The description is what
-   mooncakes shows, so it says what the package is and what it is not.
-5. Write the specification link into every `moon.pkg`.
-
-## What is here and what is not
-
-| Carried | Why |
+| Package | What it covers |
 |:--|:--|
-| `.github/workflows/` | GitHub does not inherit workflows; every repository needs its own copy |
-| `moon.mod`, `lib/`, `bin/`, `examples/tour/` | The module layout, with the library and the binary separated the way cargo separates them |
-| `.gitignore`, `.moonignore` | The second one exists because `.gitignore`'s `!.git*` would otherwise pull the whole object database into a published tarball |
-| `LICENSE` | Apache-2.0, the same across the organisation |
+| `xlang` | The cross-language binary format: the default when the two ends are different languages |
+| `row` | The row format: random access to a field without rebuilding the object |
+| `types` | The cross-language type mapping, and what has no counterpart on our side |
+| `refs` | Shared and circular references, which are the reason this is not just a tagged encoder |
 
-**Issue and pull-request templates are not here.** The organisation's `.github`
-repository supplies them to every repository that has none of its own; a copy
-here would shadow that one and then drift from it. A repository adds its own
-only when it needs something the organisation's does not cover.
+## Why implement it rather than invent one
 
-## The gate
+The same reason [`moonseal`](https://github.com/moonbitstack/moonseal) starts
+from age: **the specification is published and so are the other languages'
+implementations**, which means a first version can be proved right against
+something outside itself. Eleven languages already speak this format; being the
+twelfth is worth more than being the only speaker of a better one.
 
-Every commit passes this, with each exit code seen to be zero:
+## What is deliberately elsewhere
+
+| Thing | Where it lives |
+|:--|:--|
+| Describing the fields of a type | [`moonmodel`](https://github.com/moonbitstack/moonmodel) — MoonBit has no user-extensible `derive`, so the description is written or generated once and read by everything, this included |
+| Turning numbers into bytes | [`moonvar`](https://github.com/moonbitstack/moonvar) |
+| JSON | [`moonjson`](https://github.com/moonbitstack/moonjson). Fory has a JSON mode; ours is already written |
+
+Nothing in this family depends on it. It is a codec a caller chooses, the way
+they would choose protobuf — not a layer anything sits on.
+
+## Install
 
 ```bash
-moon clean && moon fmt && moon check --target all --deny-warn \
-  && moon build --target all && moon test --target all
+moon add moonbitstack/moonfory
 ```
-
-Before a release, `moon info --target all && git diff --exit-code` as well: the
-generated interface is checked in, and a difference means the interface moved
-without anyone saying so.
-
-## Releasing
-
-Push a signed tag `v<version>`. `release.yml` runs the tests first and publishes
-only if they pass and the organisation variable `MOONCAKES_PUBLISH` is `true`.
-The major version stays at 0.
 
 ## Licence
 
-Apache-2.0.
+Apache-2.0. See [LICENSE](LICENSE).
