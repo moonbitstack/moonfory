@@ -43,7 +43,7 @@ jobs:
         run: moon build --target all
 
       - name: moon test (all backends)
-        run: moon test --target all
+        run: moon test --target all --deny-warn
 
       - name: lint (fmt is clean)
         run: |
