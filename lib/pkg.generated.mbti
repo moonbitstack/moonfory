@@ -1,13 +1,373 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moonfory/lib"
 
+import {
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/debug",
+}
+
 // Values
-pub fn greet(StringView) -> String
+pub fn compare_field(FieldMeta, FieldMeta) -> Int32
+
+pub let config : Config
+
+pub fn[T : Codec] dump(T, @buffer.Buffer, config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> Unit raise
+
+pub fn[T : Codec] dumps(T, config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> Bytes raise
+
+pub fn hex(Bytes) -> String
+
+pub fn[T : Codec] load(Reader) -> T raise
+
+pub fn[T : Codec] loads(Bytes, schemas? : Array[StructMeta], config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> T raise
+
+pub fn read_body(Reader, TypeId) -> Value raise
+
+pub fn[T : Codec] read_message(Reader) -> T raise
+
+pub fn read_value(Reader) -> Value raise
+
+pub fn resolve(Config?, Bool?, Bool?, Bool?, Int32?, Int32?, Int32?, Wins?, OnClash[Config]?) -> Config raise
+
+pub let root_key : Int32
+
+pub fn[T] shared(Int32, T) -> Shared[T]
+
+pub fn unhex(String) -> Bytes raise
+
+pub fn write_body(Writer, Value) -> Unit raise
+
+pub fn[T : Codec] write_message(Writer, T) -> Unit raise
+
+pub fn write_value(Writer, Value) -> Unit raise
+
+pub fn write_value_data(Writer, Value) -> Unit raise
 
 // Errors
+pub(all) suberror Clashed {
+  Clashed(name~ : String)
+} derive(Eq, @debug.Debug)
+pub fn Clashed::equal(Self, Self) -> Bool
+pub fn Clashed::not_equal(Self, Self) -> Bool
+pub fn Clashed::output(Self, &Logger) -> Unit
+pub fn Clashed::to_repr(Self) -> @debug.Repr
+pub fn Clashed::to_string(Self) -> String
+pub impl Show for Clashed
+
+pub(all) suberror Refused {
+  Truncated(at~ : Int32, want~ : Int32, got~ : Int32)
+  TooLarge(at~ : Int32, limit~ : Int64, got~ : Int64)
+  TooDeep(at~ : Int32, limit~ : Int32)
+  BadType(at~ : Int32, got~ : Int32)
+  WantType(at~ : Int32, want~ : Int32, got~ : Int32)
+  BadHeader(at~ : Int32, got~ : Int32)
+  BadRef(at~ : Int32, got~ : Int32)
+  BadEncoding(at~ : Int32, got~ : Int32)
+  Cyclic(at~ : Int32, got~ : Int32)
+  Trailing(at~ : Int32, got~ : Int32)
+  Unsupported(kind~ : String)
+} derive(Eq, @debug.Debug)
+pub fn Refused::equal(Self, Self) -> Bool
+pub fn Refused::not_equal(Self, Self) -> Bool
+pub fn Refused::output(Self, &Logger) -> Unit
+pub fn Refused::to_repr(Self) -> @debug.Repr
+pub fn Refused::to_string(Self) -> String
+pub impl Show for Refused
 
 // Types and methods
+pub(all) struct Config {
+  xlang : Bool
+  track_ref : Bool
+  check_string : Bool
+  depth : Int32
+  fields : Int32
+  graph : Int32
+}
+pub fn Config::new(xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32) -> Self
+
+pub(all) struct FieldMeta {
+  name : String
+  tag : Int32?
+  ty : TypeId
+  nullable : Bool
+  track_ref : Bool
+} derive(Eq, @debug.Debug)
+pub fn FieldMeta::equal(Self, Self) -> Bool
+pub fn FieldMeta::identifier(Self) -> String
+pub fn FieldMeta::new(String, TypeId, tag? : Int32?, nullable? : Bool, track_ref? : Bool) -> Self
+pub fn FieldMeta::not_equal(Self, Self) -> Bool
+pub fn FieldMeta::output(Self, &Logger) -> Unit
+pub fn FieldMeta::to_repr(Self) -> @debug.Repr
+pub fn FieldMeta::to_string(Self) -> String
+pub impl Show for FieldMeta
+
+pub(all) enum OnClash[T] {
+  Ignore
+  Panic
+  Handle((T, T) -> T)
+}
+
+pub(all) struct Reader {
+  view : BytesView
+  config : Config
+  mut at : Int32
+  refs : Array[Int32]
+  nodes : Map[Int32, Value]
+  schemas : Map[Int32, StructMeta]
+  mut replay : Int32
+  replaying : Array[Int32]
+  mut depth : Int32
+  mut spent : Int32
+}
+pub fn Reader::end(Self) -> Unit raise
+pub fn Reader::enter(Self) -> Unit raise
+pub fn Reader::enter_ref(Self, Int32) -> Int32 raise
+pub fn Reader::is_done(Self) -> Bool
+pub fn Reader::leave(Self) -> Unit
+pub fn Reader::leave_ref(Self, Int32) -> Unit
+pub fn Reader::new(Bytes, config? : Config, schemas? : Array[StructMeta]) -> Self
+pub fn Reader::node(Self, Int32) -> Value?
+pub fn Reader::offset(Self) -> Int32
+pub fn Reader::read_binary(Self) -> Bytes raise
+pub fn Reader::read_bool(Self) -> Bool raise
+pub fn Reader::read_byte(Self) -> Int32 raise
+pub fn Reader::read_bytes(Self, Int32) -> Bytes raise
+pub fn Reader::read_f32(Self) -> Float raise
+pub fn Reader::read_f64(Self) -> Double raise
+pub fn Reader::read_head(Self) -> Unit raise
+pub fn Reader::read_i16(Self) -> Int32 raise
+pub fn Reader::read_i32(Self) -> Int32 raise
+pub fn Reader::read_i64(Self) -> Int64 raise
+pub fn Reader::read_i8(Self) -> Int32 raise
+pub fn Reader::read_ref_flag(Self) -> RefFlag raise
+pub fn Reader::read_string(Self) -> String raise
+pub fn Reader::read_tagged_i64(Self) -> Int64 raise
+pub fn Reader::read_tagged_u64(Self) -> UInt64 raise
+pub fn Reader::read_type_id(Self) -> TypeId raise
+pub fn Reader::read_u16(Self) -> Int32 raise
+pub fn Reader::read_u32(Self) -> UInt32 raise
+pub fn Reader::read_u64(Self) -> UInt64 raise
+pub fn Reader::read_u8(Self) -> Int32 raise
+pub fn Reader::read_user_type(Self) -> (TypeId, Int32) raise
+pub fn Reader::read_var_i32(Self) -> Int32 raise
+pub fn Reader::read_var_i64(Self) -> Int64 raise
+pub fn Reader::read_var_u32(Self) -> UInt32 raise
+pub fn Reader::read_var_u36(Self) -> UInt64 raise
+pub fn Reader::read_var_u64(Self) -> UInt64 raise
+pub fn Reader::ref_offset(Self, Int32) -> Int32 raise
+pub fn Reader::remaining(Self) -> Int32
+pub fn Reader::schema(Self, Int32) -> StructMeta?
+pub fn Reader::seek(Self, Int32) -> Unit
+pub fn Reader::set_node(Self, Int32, Value) -> Unit
+pub fn Reader::spend(Self, Int32) -> Unit raise
+
+pub(all) enum RefFlag {
+  Null
+  Ref(id~ : Int32)
+  NotNull
+  RefValue(id~ : Int32)
+} derive(Eq, @debug.Debug)
+pub fn RefFlag::equal(Self, Self) -> Bool
+pub fn RefFlag::not_equal(Self, Self) -> Bool
+pub fn RefFlag::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Shared[T] {
+  key : Int32
+  value : T
+} derive(Eq, @debug.Debug)
+pub fn[T : Eq] Shared::equal(Self[T], Self[T]) -> Bool
+pub fn[T : Eq] Shared::not_equal(Self[T], Self[T]) -> Bool
+pub fn[T : Codec] Shared::read_data(Reader, TypeId) -> Self[T] raise
+pub fn[T : @debug.Debug] Shared::to_repr(Self[T]) -> @debug.Repr
+pub fn[T : Codec] Shared::ty(Self[T]) -> TypeId
+pub fn[T : Codec] Shared::write_data(Self[T], Writer) -> Unit raise
+pub impl[T : Codec] Codec for Shared[T]
+
+pub(all) struct StructMeta {
+  name : String
+  user : Int32
+  fields : Array[FieldMeta]
+} derive(Eq, @debug.Debug)
+pub fn StructMeta::equal(Self, Self) -> Bool
+pub fn StructMeta::find(Self, String) -> FieldMeta?
+pub fn StructMeta::new(String, Int32, Array[FieldMeta]) -> Self
+pub fn StructMeta::not_equal(Self, Self) -> Bool
+pub fn StructMeta::order(Self) -> Array[Int32]
+pub fn StructMeta::ordered(Self) -> Array[FieldMeta]
+pub fn StructMeta::output(Self, &Logger) -> Unit
+pub fn StructMeta::to_repr(Self) -> @debug.Repr
+pub fn StructMeta::to_string(Self) -> String
+pub impl Show for StructMeta
+
+pub(all) enum TypeId {
+  Unknown
+  Bool
+  Int8
+  Int16
+  Int32
+  VarInt32
+  Int64
+  VarInt64
+  TaggedInt64
+  UInt8
+  UInt16
+  UInt32
+  VarUInt32
+  UInt64
+  VarUInt64
+  TaggedUInt64
+  Float8
+  Float16
+  BFloat16
+  Float32
+  Float64
+  String
+  List
+  Set
+  Map
+  Enum
+  NamedEnum
+  Struct
+  CompatibleStruct
+  NamedStruct
+  NamedCompatibleStruct
+  Ext
+  NamedExt
+  Union
+  TypedUnion
+  NamedUnion
+  NoneType
+  Duration
+  Timestamp
+  Date
+  Decimal
+  Binary
+  Array
+  BoolArray
+  Int8Array
+  Int16Array
+  Int32Array
+  Int64Array
+  UInt8Array
+  UInt16Array
+  UInt32Array
+  UInt64Array
+  Float8Array
+  Float16Array
+  BFloat16Array
+  Float32Array
+  Float64Array
+} derive(Eq, @debug.Debug)
+pub fn TypeId::arrayed(Self) -> Self?
+pub fn TypeId::code(Self) -> Int32
+pub fn TypeId::element(Self) -> Self?
+pub fn TypeId::equal(Self, Self) -> Bool
+pub fn TypeId::fixed_size(Self) -> Int32?
+pub fn TypeId::is_collection(Self) -> Bool
+pub fn TypeId::is_compressed(Self) -> Bool
+pub fn TypeId::is_dense(Self) -> Bool
+pub fn TypeId::is_named_by_id(Self) -> Bool
+pub fn TypeId::is_primitive(Self) -> Bool
+pub fn TypeId::is_user(Self) -> Bool
+pub fn TypeId::not_equal(Self, Self) -> Bool
+pub fn TypeId::of(Int32) -> Self?
+pub fn TypeId::output(Self, &Logger) -> Unit
+pub fn TypeId::to_repr(Self) -> @debug.Repr
+pub fn TypeId::to_string(Self) -> String
+pub impl Show for TypeId
+
+pub(all) enum Value {
+  Null
+  Bool(Bool)
+  Int(Int64)
+  UInt(UInt64)
+  Float(Double)
+  Str(String)
+  Binary(Bytes)
+  List(TypeId, Array[Value])
+  Map(Array[(Value, Value)])
+  Struct(StructMeta, Array[(String, Value)])
+  Enum(Int32, Int32)
+  Timestamp(Int64, Int32)
+  Date(Int64)
+  Duration(Int64, Int32)
+  Decimal(Int32, @bigint.BigInt)
+} derive(Eq, @debug.Debug)
+pub fn Value::equal(Self, Self) -> Bool
+pub fn Value::not_equal(Self, Self) -> Bool
+pub fn Value::output(Self, &Logger) -> Unit
+pub fn Value::read_data(Reader, TypeId) -> Self raise
+pub fn Value::to_repr(Self) -> @debug.Repr
+pub fn Value::to_string(Self) -> String
+pub fn Value::ty(Self) -> TypeId
+pub fn Value::write_data(Self, Writer) -> Unit raise
+pub impl Show for Value
+pub impl Codec for Value
+
+pub(all) enum Wins {
+  Base
+  Extra
+} derive(Eq, @debug.Debug)
+pub fn Wins::equal(Self, Self) -> Bool
+pub fn Wins::not_equal(Self, Self) -> Bool
+pub fn Wins::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Writer {
+  buf : @buffer.Buffer
+  config : Config
+  refs : Map[Int32, Int32]
+  mut next_ref : Int32
+}
+pub fn Writer::buffer(Self) -> @buffer.Buffer
+pub fn Writer::bytes(Self) -> Bytes
+pub fn Writer::length(Self) -> Int32
+pub fn Writer::new(config? : Config, buffer? : @buffer.Buffer) -> Self
+pub fn Writer::write_binary(Self, Bytes) -> Unit
+pub fn Writer::write_bool(Self, Bool) -> Unit
+pub fn Writer::write_byte(Self, Int32) -> Unit
+pub fn Writer::write_bytes(Self, Bytes) -> Unit
+pub fn Writer::write_f32(Self, Float) -> Unit
+pub fn Writer::write_f64(Self, Double) -> Unit
+pub fn Writer::write_head(Self) -> Unit
+pub fn Writer::write_i16(Self, Int32) -> Unit
+pub fn Writer::write_i32(Self, Int32) -> Unit
+pub fn Writer::write_i64(Self, Int64) -> Unit
+pub fn Writer::write_i8(Self, Int32) -> Unit
+pub fn Writer::write_null_flag(Self, Bool) -> Unit
+pub fn Writer::write_string(Self, String) -> Unit
+pub fn Writer::write_tagged_i64(Self, Int64) -> Unit
+pub fn Writer::write_tagged_u64(Self, UInt64) -> Unit
+pub fn Writer::write_tracked(Self, Int32) -> Bool
+pub fn Writer::write_type_id(Self, TypeId) -> Unit
+pub fn Writer::write_u16(Self, Int32) -> Unit
+pub fn Writer::write_u32(Self, UInt32) -> Unit
+pub fn Writer::write_u64(Self, UInt64) -> Unit
+pub fn Writer::write_u8(Self, Int32) -> Unit
+pub fn Writer::write_user_type(Self, TypeId, Int32) -> Unit
+pub fn Writer::write_var_i32(Self, Int32) -> Unit
+pub fn Writer::write_var_i64(Self, Int64) -> Unit
+pub fn Writer::write_var_u32(Self, UInt32) -> Unit
+pub fn Writer::write_var_u36(Self, UInt64) -> Unit
+pub fn Writer::write_var_u64(Self, UInt64) -> Unit
 
 // Type aliases
 
 // Traits
+pub trait Codec {
+  fn ty(Self) -> TypeId
+  fn write_data(Self, Writer) -> Unit raise
+  fn read_data(Reader, TypeId) -> Self raise
+}
+pub impl Codec for Bool
+pub impl Codec for Byte
+pub impl Codec for Int32
+pub impl Codec for Int64
+pub impl Codec for UInt32
+pub impl Codec for UInt64
+pub impl Codec for Float
+pub impl Codec for Double
+pub impl Codec for String
+pub impl Codec for Bytes
+pub impl[T : Codec] Codec for Array[T]
+pub impl[K : Codec + Hash + Eq, V : Codec] Codec for Map[K, V]

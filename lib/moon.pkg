@@ -1,2 +1,20 @@
-// What this package implements, and a first-hand link to the specification it
-// implements. A package without that link is not finished.
+// Copyright 2026 Leo Cheng
+// SPDX-License-Identifier: Apache-2.0
+
+// The Apache Fory wire formats for MoonBit: the cross-language binary format
+// (xlang) and the row format, over the cross-language type mapping.
+//
+// Implemented from the specifications, not from another implementation:
+//   xlang        https://fory.apache.org/docs/specification/fory_xlang_serialization_spec
+//   row          https://fory.apache.org/docs/specification/fory_row_format_spec
+//   type mapping https://fory.apache.org/docs/specification/fory_type_mapping
+//
+// Numbers become bytes through moonvar: base-128 varints for the variable
+// widths and an explicit order for the fixed ones. Nothing here reads a clock,
+// opens a file or keeps state between calls: a value goes in, bytes come out.
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/utf16",
+  "moonbitstack/moonvar/leb128",
+  "moonbitstack/moonvar/fixed",
+}
