@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs — moonfory</title>
+    <meta
+      name="description"
+      content="The interface, the type table, the configuration, the row format and the refusals of moonfory."
+    />
+    <link rel="stylesheet" href="assets/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f5f0e6'/%3E%3Crect x='6' y='9' width='20' height='2' fill='%23b23a1b'/%3E%3Crect x='6' y='15' width='13' height='2' fill='%2317130e'/%3E%3Crect x='6' y='21' width='17' height='2' fill='%232c6a64'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="top">
+      <a class="wordmark" href="index.html">
+        moon<span class="slash">/</span>fory
+        <small>Apache Fory · MoonBit</small>
+      </a>
+      <nav class="nav">
+        <a href="index.html">Home</a>
+        <a href="docs.html" aria-current="page">Docs</a>
+        <a href="examples.html">Examples</a>
+        <a href="https://github.com/moonbitstack/moonfory">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="docs">
+      <aside class="rail" aria-label="Contents">
+        <div class="grp">Start</div>
+        <a href="#overview">Overview</a>
+        <a href="#install">Install</a>
+        <a href="#verbs">The four verbs</a>
+        <a href="#codec">Implementing Codec</a>
+        <div class="grp">The format</div>
+        <a href="#types">Type table</a>
+        <a href="#numbers">Numbers</a>
+        <a href="#config">Configuration</a>
+        <a href="#refs">Shared values</a>
+        <div class="grp">Row format</div>
+        <a href="#row">Rows</a>
+        <a href="#time">Time</a>
+        <div class="grp">Reference</div>
+        <a href="#errors">Errors</a>
+        <a href="#not-here">Not here</a>
+      </aside>
+
+      <article class="article">
+        <p class="eyebrow">Documentation</p>
+        <h2 id="overview" style="font-size: clamp(34px, 5vw, 54px)">
+          The whole interface, on one sheet.
+        </h2>
+        <p class="lede-2">
+          Everything below is the public surface. There is no hidden state, no
+          clock, no file and no socket: a value goes in, bytes come out.
+        </p>
+
+        <h2 id="install">Install</h2>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre>moon add moonbitstack/moonfory</pre>
+        </div>
+        <p>In <code>moon.pkg</code>:</p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-k">import</span> {
+  <span class="tok-s">"moonbitstack/moonfory/lib"</span>,
+}</pre>
+        </div>
+        <p>
+          The package is reached as <code>@lib</code>. Its dependencies are
+          <code>moonbitstack/moonvar</code> for the numbers and
+          <code>moonbitstack/moondate</code> for the time types; nothing else is
+          pulled in.
+        </p>
+
+        <h2 id="verbs">The four verbs</h2>
+        <p>
+          A value goes in and comes out through <code>dumps</code> and
+          <code>loads</code>. <code>dump</code> and <code>load</code> do the same
+          over a <code>Buffer</code> or a <code>Reader</code> you already hold, for
+          when a message is one part of a larger stream.
+        </p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(value)</span>
+<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span>     <span class="tok-n">=</span> <span class="tok-n">@lib.loads(bytes)</span>
+
+<span class="tok-n">@lib.dump(value, buffer)</span>
+<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span> <span class="tok-n">=</span> <span class="tok-n">@lib.load(reader)</span></pre>
+        </div>
+        <table>
+          <tr><th>Function</th><th>Takes</th><th>Gives</th></tr>
+          <tr><td><code>dumps(v, ...)</code></td><td>any <code>Codec</code> value</td><td>the message as <code>Bytes</code></td></tr>
+          <tr><td><code>loads(b, schemas?, ...)</code></td><td>a message</td><td>the value, or a <code>Refused</code></td></tr>
+          <tr><td><code>dump(v, buf, ...)</code></td><td>a value and a buffer</td><td>writes into the buffer</td></tr>
+          <tr><td><code>load(r)</code></td><td>a reader</td><td>one value</td></tr>
+          <tr><td><code>write_message(w, v)</code></td><td>a writer and a value</td><td>head, value, nothing else</td></tr>
+          <tr><td><code>read_message(r)</code></td><td>a reader</td><td>the one value the head announces</td></tr>
+          <tr><td><code>write_value(w, v)</code> / <code>read_value(r)</code></td><td>a <code>Value</code></td><td>the dynamic form</td></tr>
+          <tr><td><code>hex(b)</code> / <code>unhex(t)</code></td><td>bytes or text</td><td>the other, for reading a fixture</td></tr>
+        </table>
+        <div class="note">
+          <b>One value, and then the end.</b> <code>loads</code> reads exactly one
+          value and then insists the message is finished. Two values in one buffer
+          are a <code>Trailing</code> error, not a silent truncation.
+        </div>
+
+        <h2 id="codec">Implementing Codec</h2>
+        <p>
+          A type joins in by implementing <code>Codec</code>.
+          <code>write_data</code> writes the <b>body only</b>: the type ID belongs to
+          whoever knows the schema, so a list element and a struct field each name
+          their own type without the body repeating it.
+        </p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">ty</span>(<span class="tok-n">_self</span>) {
+  <span class="tok-n">TypeId::Int64</span>
+}
+
+<span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">write_data</span>(<span class="tok-n">self</span>, <span class="tok-n">w</span>) {
+  <span class="tok-n">w.write_i64(self.0)</span>
+}
+
+<span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">read_data</span>(<span class="tok-n">r</span>, <span class="tok-n">_ty</span>) {
+  <span class="tok-n">UserId(r.read_i64())</span>
+}</pre>
+        </div>
+        <p>
+          <code>Bool</code>, <code>Int</code>, <code>Int64</code>, <code>UInt</code>,
+          <code>UInt64</code>, <code>Byte</code>, <code>Float</code>,
+          <code>Double</code>, <code>String</code>, <code>Bytes</code>,
+          <code>Array[T]</code>, <code>Map[K, V]</code> and <code>Value</code>
+          already implement it.
+        </p>
+
+        <h2 id="types">Type table</h2>
+        <table>
+          <tr><th>Fory type</th><th>Code</th><th>MoonBit</th><th>Written as</th></tr>
+          <tr><td>BOOL</td><td>1</td><td><code>Bool</code></td><td>one byte, <code>00</code> or <code>01</code></td></tr>
+          <tr><td>INT8 / INT16 / INT32</td><td>2 / 3 / 4</td><td><code>Byte</code> / <code>Int</code></td><td>two's complement, little-endian</td></tr>
+          <tr><td>INT64</td><td>6</td><td><code>Int64</code></td><td>eight bytes</td></tr>
+          <tr><td>VARINT32 / VARINT64</td><td>5 / 7</td><td>any signed width</td><td>zig-zag, base-128</td></tr>
+          <tr><td>TAGGED_INT64 / UINT64</td><td>8 / 15</td><td><code>Int64</code> / <code>UInt64</code></td><td>four bytes when small, else nine</td></tr>
+          <tr><td>FLOAT32 / FLOAT64</td><td>19 / 20</td><td><code>Float</code> / <code>Double</code></td><td>IEEE 754, little-endian</td></tr>
+          <tr><td>STRING</td><td>21</td><td><code>String</code></td><td>length-and-encoding header, then UTF-8</td></tr>
+          <tr><td>LIST / SET</td><td>22 / 23</td><td><code>Array[T]</code></td><td>count, element header, elements</td></tr>
+          <tr><td>MAP</td><td>24</td><td><code>Map[K, V]</code></td><td>total, then key/value chunks</td></tr>
+          <tr><td>STRUCT</td><td>27</td><td><code>StructMeta</code> + fields</td><td>user id, then fields in Fory order</td></tr>
+          <tr><td>ENUM</td><td>25</td><td>ordinal</td><td>a varint</td></tr>
+          <tr><td>DURATION / TIMESTAMP / DATE</td><td>37 / 38 / 39</td><td><code>Span</code> / <code>Moment</code> / <code>Date</code></td><td>see <a href="#time">Time</a></td></tr>
+          <tr><td>DECIMAL</td><td>40</td><td><code>(Int, BigInt)</code></td><td>scale, then the unscaled integer</td></tr>
+          <tr><td>BINARY</td><td>41</td><td><code>Bytes</code></td><td>length, then the bytes</td></tr>
+          <tr><td>BOOL_ARRAY … FLOAT64_ARRAY</td><td>43 … 56</td><td><code>Array[T]</code></td><td>raw little-endian, no header per element</td></tr>
+        </table>
+        <p>
+          Strings are written as UTF-8. A reader also accepts LATIN1 and UTF-16,
+          because <code>pyfory</code> writes LATIN1 for ASCII; only the writer's
+          choice is fixed here.
+        </p>
+
+        <h2 id="numbers">Numbers, in one place</h2>
+        <p>
+          <code>Int</code> is written as INT32, <code>Int64</code> as INT64,
+          <code>UInt</code> as UINT32 and <code>UInt64</code> as UINT64. The reader
+          is looser on purpose: it accepts any width of the same signedness, so a
+          peer's VARINT64 arrives as an <code>Int</code> without a byte of
+          conversion. A 64-bit value asked for as a 32-bit type is refused rather
+          than truncated.
+        </p>
+
+        <h2 id="config">Configuration</h2>
+        <table>
+          <tr><th>Knob</th><th>Default</th><th>What it means</th></tr>
+          <tr><td><code>xlang</code></td><td><code>true</code></td><td>the header carries the cross-language flag</td></tr>
+          <tr><td><code>track_ref</code></td><td><code>false</code></td><td>values written twice are sent once and pointed at</td></tr>
+          <tr><td><code>check_string</code></td><td><code>true</code></td><td>string bytes are checked as UTF-8 before becoming a <code>String</code></td></tr>
+          <tr><td><code>depth</code></td><td><code>5</code></td><td>how deeply values may nest before the message is refused</td></tr>
+          <tr><td><code>fields</code></td><td><code>512</code></td><td>how many fields a struct may declare</td></tr>
+          <tr><td><code>graph</code></td><td><code>134_217_728</code></td><td>how many variable-length bytes one message may declare</td></tr>
+        </table>
+        <p>
+          <b>Precedence.</b> A call has three places to say what it wants. The
+          library preset (<code>config</code>) is the floor. A <code>Config</code>
+          passed as <code>config=</code> replaces it wholesale. The flat mirrors —
+          <code>xlang=</code>, <code>track_ref=</code>,
+          <code>check_string=</code>, <code>depth=</code>, <code>fields=</code>,
+          <code>graph=</code> — then override single fields of that result. When a
+          <code>Config</code> and a flat mirror disagree, the flat mirror wins,
+          unless <code>wins=Base</code> is passed, in which case the record wins. A
+          disagreement is silent by default; <code>clash=Panic</code> turns it into
+          a <code>Clashed</code> error, and <code>clash=Handle(f)</code> lets you
+          arbitrate.
+        </p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-n">@lib.dumps(v, track_ref=true)</span>
+<span class="tok-n">@lib.dumps(v, config=my_config, depth=8)</span>
+<span class="tok-n">@lib.dumps(v, config=my_config, xlang=false, clash=Panic)</span></pre>
+        </div>
+
+        <h2 id="refs">Shared and circular values</h2>
+        <p>
+          MoonBit has no object identity to track, so a value meant to be shared is
+          marked explicitly, with a key you choose. The first write emits the body;
+          later writes emit a back-reference. A cycle read back is stitched together
+          through the reader's node table, and a cycle that cannot be resolved is a
+          <code>Cyclic</code> refusal rather than a hang.
+        </p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-k">let</span> once  <span class="tok-n">=</span> <span class="tok-n">@lib.shared(</span><span class="tok-n">7</span>, <span class="tok-s">"the same string"</span>)
+<span class="tok-k">let</span> twice <span class="tok-n">=</span> [once, once]   <span class="tok-c">// two references, one body</span>
+<span class="tok-k">let</span> bytes <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(twice, track_ref=true)</span></pre>
+        </div>
+        <p>
+          Turn <code>track_ref</code> on for both ends, or neither: a reader that is
+          not tracking reads the first body and then a flag it does not expect.
+        </p>
+
+        <h2 id="row">The row format</h2>
+        <p>
+          The row format trades a little space for random access: eight bytes per
+          field, whether the field needs them or not, so field <em>i</em> is always
+          at <code>bitmap + i × 8</code>. A reader takes one field and leaves the
+          rest alone.
+        </p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@lib.RowSchema::new(</span>[
+  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
+])
+
+<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@lib.Row::new(schema)</span>
+<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@lib.RowValue::Int64(</span><span class="tok-n">7L</span>))
+<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@lib.RowValue::String(</span><span class="tok-s">"ada"</span>))
+<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@lib.RowValue::Null)
+
+<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@lib.RowCursor::new(row.finish()[:], schema)</span>
+<span class="tok-n">cur.get_field(</span><span class="tok-n">1</span>)   <span class="tok-c">// RowValue::String("ada")</span>
+<span class="tok-n">cur.is_null(</span><span class="tok-n">2</span>)     <span class="tok-c">// true</span></pre>
+        </div>
+        <p>
+          The layout is the specification's standard variant: a null bitmap rounded
+          to eight bytes, one eight-byte slot per field, then the variable data. An
+          array keeps fixed-width elements at their natural width and variable ones
+          as offset-and-size pairs; a map is a key array and a value array; a nested
+          struct is a whole row inside the variable region.
+        </p>
+        <div class="note">
+          <b>The compact variant is not here.</b> It is Java-only, so a
+          cross-language implementation has no peer to agree with.
+        </div>
+
+        <h2 id="time">Time</h2>
+        <p>
+          Through <code>moonbitstack/moondate</code>, so a MoonBit program never
+          spells out epoch seconds:
+        </p>
+        <div class="code">
+          <button class="copy" data-copy>copy</button>
+          <pre><span class="tok-k">let</span> date   <span class="tok-n">=</span> <span class="tok-n">@lib.date_of_days(</span><span class="tok-n">19_000L</span>)              <span class="tok-c">// DATE</span>
+<span class="tok-k">let</span> moment <span class="tok-n">=</span> <span class="tok-n">@lib.moment_of_parts(</span><span class="tok-n">1_700_000_000L</span>, <span class="tok-n">0</span>) <span class="tok-c">// TIMESTAMP</span>
+<span class="tok-k">let</span> span   <span class="tok-n">=</span> <span class="tok-n">@lib.span_of_parts(</span><span class="tok-n">3L</span>, <span class="tok-n">500_000_000</span>)     <span class="tok-c">// DURATION</span>
+<span class="tok-n">@lib.dumps(moment)</span>                                     <span class="tok-c">// and back</span></pre>
+        </div>
+        <p>
+          Nanoseconds are always the sub-second part, in <code>[0, 1e9)</code>, so a
+          value of 1.5 seconds is <code>(1, 500_000_000)</code> and a negative span
+          borrows a second rather than carrying a negative nanosecond field.
+        </p>
+
+        <h2 id="errors">Errors</h2>
+        <table>
+          <tr><th>Variant</th><th>When</th></tr>
+          <tr><td><code>Truncated(at, want, got)</code></td><td>the buffer ended before the value did</td></tr>
+          <tr><td><code>TooLarge(at, limit, got)</code></td><td>a declared length or count crossed a limit</td></tr>
+          <tr><td><code>TooDeep(at, limit)</code></td><td>nesting crossed <code>depth</code></td></tr>
+          <tr><td><code>BadType(at, got)</code> / <code>WantType(at, want, got)</code></td><td>the type ID is unknown, or not the one asked for</td></tr>
+          <tr><td><code>BadHeader(at, got)</code></td><td>the header's flag bits are not this format's</td></tr>
+          <tr><td><code>BadRef(at, got)</code></td><td>a back-reference named an id never written</td></tr>
+          <tr><td><code>BadEncoding(at, got)</code></td><td>a string's encoding tag is not one of the three</td></tr>
+          <tr><td><code>Cyclic(at, got)</code></td><td>a cycle that cannot be resolved</td></tr>
+          <tr><td><code>Trailing(at, got)</code></td><td>bytes remain after the one message</td></tr>
+          <tr><td><code>Unsupported(kind)</code></td><td>the type has no counterpart here</td></tr>
+        </table>
+
+        <h2 id="not-here">What is deliberately not here</h2>
+        <table>
+          <tr><th>Thing</th><th>Why not</th></tr>
+          <tr><td>Compatible struct mode (28, 30)</td><td>needs a schema registry to reconcile two type definitions; that belongs with <code>moonmodel</code>, not inside a codec</td></tr>
+          <tr><td>FLOAT8 / FLOAT8_ARRAY (16, 56)</td><td>no peer in reach writes them; when one does, the table has the code</td></tr>
+          <tr><td>Writing a shared reference from a <code>Value</code></td><td><code>Value</code> has no identity to point at; use <code>Shared[T]</code> with an explicit key</td></tr>
+          <tr><td>Reading a struct without its schema</td><td>the schema is the user id's meaning; <code>loads(schemas=[...])</code> supplies it</td></tr>
+        </table>
+        <p>
+          Each refusal is a <code>Refused</code> variant with the offset that
+          produced it, so a malformed message names where it stopped rather than
+          "invalid input".
+        </p>
+
+        <hr class="rule" />
+        <p style="color: var(--muted); font-size: 14px">
+          Implemented from the
+          <a href="https://fory.apache.org/docs/specification/fory_xlang_serialization_spec">cross-language specification</a>,
+          the <a href="https://fory.apache.org/docs/specification/fory_row_format_spec">row format specification</a>
+          and the <a href="https://fory.apache.org/docs/specification/fory_type_mapping">type mapping</a>
+          — not from another implementation's source.
+        </p>
+      </article>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>moonfory · Apache-2.0 · a <a href="https://github.com/moonbitstack">moonbitstack</a> package</span>
+        <span>
+          <a href="docs.html">Docs</a> ·
+          <a href="examples.html">Examples</a> ·
+          <a href="https://github.com/moonbitstack/moonfory">Source</a>
+        </span>
+      </div>
+    </footer>
+
+    <script src="assets/app.js" defer></script>
+  </body>
+</html>

@@ -38,6 +38,8 @@ package has never heard of can be written with the same calls its own types are.
 | `value.mbt` | `Value`, and how a container, a struct, an enum, a time and a decimal are framed | `Writer`, `Reader`, `StructMeta` |
 | `codec.mbt` | the `Codec` trait, its implementations, and the four entry points | everything above |
 | `row.mbt` | the row format: a schema, a writer, and random access | `Writer`, `Reader`, `TypeId` |
+| `time.mbt` | DATE, TIMESTAMP and DURATION, wired to `moondate` | `Codec`, `@moondate` |
+| `hex.mbt` | `hex`/`unhex`, so a test can compare a fixture as text | — |
 
 ## The four interfaces
 
@@ -45,9 +47,9 @@ package has never heard of can be written with the same calls its own types are.
 
 ```moonbit
 pub trait Codec {
-  ty(Self) -> TypeId                  // what it goes out as
-  write_data(Self, Writer) -> Unit    // the body only; the envelope is not its business
-  read_data(Reader) -> Self raise     // the body only
+  ty(Self) -> TypeId                     // what it goes out as
+  write_data(Self, Writer) -> Unit       // the body only; the envelope is not its business
+  read_data(Reader, TypeId) -> Self raise // the body only; the ID says which width arrived
 }
 ```
 
@@ -80,6 +82,14 @@ declaration order into the Fory order, which is the order every language writes.
 A record with a preset of the same name, flat mirrors on the entry points, and
 `wins`/`clash` over the two. Every default is the Rust `fory` crate's
 `Config::default()`, and each one says so where it is declared.
+
+### 5. `RowSchema` / `RowCursor` — the row format's two ends
+
+A row is built against a schema and read against the same schema: `Row::set`
+places a `RowValue`, `Row::finish` lays out the bitmap, the slots and the
+variable region, and `RowCursor` reads one field at a time. A nested struct is a
+whole row in the variable region, so the writer and the reader recurse instead of
+special-casing depth.
 
 ## How the four meet
 

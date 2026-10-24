@@ -11,16 +11,19 @@
 // The nanosecond field is the sub-second part, always in [0, 1e9), so a value of
 // 1.5 seconds is (1, 500_000_000) and never (0, 1_500_000_000).
 
+///|
 /// The day count of a date, as the wire carries it: days since 1970-01-01.
 pub fn date_of_days(days : Int64) -> @moondate.Date {
   @moondate.Date::of_days(days.to_int())
 }
 
+///|
 /// The days since 1970-01-01 for a date.
 pub fn days_of_date(date : @moondate.Date) -> Int64 {
   date.days().to_int64()
 }
 
+///|
 /// The whole seconds and the sub-second nanoseconds of a moment.
 pub fn parts_of_moment(moment : @moondate.Moment) -> (Int64, Int32) {
   let seconds = match moment.epoch() {
@@ -31,11 +34,13 @@ pub fn parts_of_moment(moment : @moondate.Moment) -> (Int64, Int32) {
   (seconds, nanos)
 }
 
+///|
 /// The moment `seconds` after the epoch, plus `nanos` nanoseconds.
 pub fn moment_of_parts(seconds : Int64, nanos : Int32) -> @moondate.Moment {
   @moondate.Moment::of_epoch(seconds, nano=nanos)
 }
 
+///|
 /// The whole seconds and the sub-second nanoseconds of a span. The nanoseconds are
 /// normalised into [0, 1e9), borrowing a second when the span is negative.
 pub fn parts_of_span(span : @moondate.Span) -> (Int64, Int32) {
@@ -49,11 +54,13 @@ pub fn parts_of_span(span : @moondate.Span) -> (Int64, Int32) {
   (seconds, nanos.to_int())
 }
 
+///|
 /// The span from `seconds` and `nanos`.
 pub fn span_of_parts(seconds : Int64, nanos : Int32) -> @moondate.Span {
-  @moondate.Span::new(seconds=seconds, nanos=nanos.to_int64())
+  @moondate.Span::new(seconds~, nanos=nanos.to_int64())
 }
 
+///|
 /// A date travels as DATE.
 pub impl Codec for @moondate.Date with fn ty(_self) {
   TypeId::Date
@@ -69,6 +76,7 @@ pub impl Codec for @moondate.Date with fn read_data(_r, _ty) {
   date_of_days(_r.read_var_i64())
 }
 
+///|
 /// A moment travels as TIMESTAMP.
 pub impl Codec for @moondate.Moment with fn ty(_self) {
   TypeId::Timestamp
@@ -88,6 +96,7 @@ pub impl Codec for @moondate.Moment with fn read_data(r, _ty) {
   moment_of_parts(seconds, nanos)
 }
 
+///|
 /// A span travels as DURATION.
 pub impl Codec for @moondate.Span with fn ty(_self) {
   TypeId::Duration

@@ -8,7 +8,7 @@
 /// them, so every section prints what it wrote as hexadecimal next to what
 /// came back.
 #coverage.skip
-fn main {
+fn main raise {
   section("one value, one message")
   show("Int 1", 1)
   show("Int64 1", 1L)
@@ -47,6 +47,38 @@ fn main {
   } noraise {
     _ => ()
   }
+
+  section("a row, read by field")
+  let schema = @lib.RowSchema::new([
+    { name: "id", ty: @lib.RowType::Int64, nullable: false, },
+    { name: "name", ty: @lib.RowType::String, nullable: false, },
+    { name: "age", ty: @lib.RowType::Int32, nullable: true, },
+  ])
+  let row = @lib.Row::new(schema)
+  row.set(0, @lib.RowValue::Int64(7L))
+  row.set(1, @lib.RowValue::String("ada"))
+  row.set(2, @lib.RowValue::Null)
+  try {
+    let row_bytes = row.finish()
+    let cur = @lib.RowCursor::new(row_bytes[:], schema)
+    println(
+      "  " +
+      pad("id, name, age", 18) +
+      "  " +
+      pad(@lib.hex(row_bytes), 40) +
+      "  " +
+      "\{@debug.Debug::to_repr(cur.get_field(1))}",
+    )
+  } catch {
+    failure => println("  refused  " + failure.to_string())
+  } noraise {
+    _ => ()
+  }
+
+  section("the time types, through moondate")
+  show("Date 19000d", @lib.date_of_days(19_000L))
+  show("Moment 1.7e9", @lib.moment_of_parts(1_700_000_000L, 0))
+  show("Span 3.5s", @lib.span_of_parts(3L, 500_000_000))
 
   section("a message written by another language")
   for

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>moonfory — Apache Fory for MoonBit</title>
+    <meta
+      name="description"
+      content="The Apache Fory cross-language binary format and the row format, implemented for MoonBit. Bytes Java, Go, Python and Rust already read."
+    />
+    <link rel="stylesheet" href="assets/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f5f0e6'/%3E%3Crect x='6' y='9' width='20' height='2' fill='%23b23a1b'/%3E%3Crect x='6' y='15' width='13' height='2' fill='%2317130e'/%3E%3Crect x='6' y='21' width='17' height='2' fill='%232c6a64'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="top">
+      <a class="wordmark" href="index.html">
+        moon<span class="slash">/</span>fory
+        <small>Apache Fory · MoonBit</small>
+      </a>
+      <nav class="nav">
+        <a href="index.html" aria-current="page">Home</a>
+        <a href="docs.html">Docs</a>
+        <a href="examples.html">Examples</a>
+        <a href="https://github.com/moonbitstack/moonfory">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Cross-language serialization</p>
+          <h1>
+            Your value,<br />
+            in the bytes<br />
+            eleven languages<br />
+            <em>already read.</em>
+          </h1>
+          <p class="lede">
+            Apache Fory fixes its wire format apart from any one implementation.
+            This is that format for MoonBit: the xlang binary, the row layout, and
+            the type table between them — written from the specification, proved
+            against <code>pyfory</code>.
+          </p>
+          <div class="actions">
+            <a class="btn primary" href="docs.html">Read the docs</a>
+            <a class="btn" href="examples.html">See it run</a>
+            <a class="btn" href="https://github.com/moonbitstack/moonfory"
+              >Source</a
+            >
+          </div>
+        </div>
+
+        <aside class="tape" aria-label="Byte inspector">
+          <div class="label">One value · the message it becomes</div>
+          <div class="picker" id="picker">
+            <button data-key="int" aria-pressed="true">42</button>
+            <button data-key="str">"ab"</button>
+            <button data-key="bool">true</button>
+            <button data-key="float">1.5</button>
+            <button data-key="list">[1, 2, 3]</button>
+            <button data-key="map">{"a": 1}</button>
+          </div>
+          <div class="hex" id="hex" aria-live="polite"></div>
+          <div class="decode" id="decode"></div>
+        </aside>
+      </section>
+
+      <section class="band">
+        <div class="wrap">
+          <p class="kicker">What is here</p>
+          <h2>Two formats, one type table.</h2>
+          <p class="lede-2">
+            A serialization format is a promise about bytes. Fory keeps two: the
+            cross-language binary that moves a value between runtimes, and the row
+            layout that lets a reader take one field without rebuilding the object.
+            Both sit on the same mapping from MoonBit types to Fory's type IDs.
+          </p>
+          <div class="ledger">
+            <div class="entry">
+              <span class="num">01</span>
+              <h3>The cross-language binary</h3>
+              <p>
+                A one-byte header, a type ID, then the body. Varints where the
+                width varies, little-endian where it does not, and a reference flag
+                in front of every value that may be shared.
+              </p>
+            </div>
+            <div class="entry">
+              <span class="num">02</span>
+              <h3>The row format</h3>
+              <p>
+                A null bitmap, eight bytes per field, then the variable data. Field
+                <em>i</em> is always at <code>bitmap + i × 8</code>, so a reader
+                takes one field and leaves the rest unread.
+              </p>
+            </div>
+            <div class="entry">
+              <span class="num">03</span>
+              <h3>Shared and circular values</h3>
+              <p>
+                A value written twice is written once and pointed at afterwards.
+                MoonBit has no object identity to track, so sharing is marked with a
+                key you choose; a cycle that cannot be resolved is refused, not
+                hung on.
+              </p>
+            </div>
+            <div class="entry">
+              <span class="num">04</span>
+              <h3>Time through moondate</h3>
+              <p>
+                <code>Date</code>, <code>Moment</code> and <code>Span</code> travel
+                as DATE, TIMESTAMP and DURATION. Nanoseconds stay the sub-second
+                part, in <code>[0, 1e9)</code>, never a negative remainder.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="wrap">
+          <div class="hero" style="padding: 0; grid-template-columns: 1fr 1fr">
+            <div>
+              <p class="kicker">The shape of the API</p>
+              <h2>Four verbs, and the bytes.</h2>
+              <p class="lede-2">
+                <code>dumps</code> and <code>loads</code> move a whole message.
+                <code>dump</code> and <code>load</code> do the same over a buffer or
+                a reader you already hold. A type joins in by implementing
+                <code>Codec</code> — one method to write the body, one to read it.
+              </p>
+              <table>
+                <tr>
+                  <th>Call</th>
+                  <th>Result</th>
+                </tr>
+                <tr>
+                  <td><code>dumps(v)</code></td>
+                  <td>one message as <code>Bytes</code></td>
+                </tr>
+                <tr>
+                  <td><code>loads(b)</code></td>
+                  <td>the value, or a <code>Refused</code></td>
+                </tr>
+                <tr>
+                  <td><code>dump(v, buf)</code></td>
+                  <td>writes into your buffer</td>
+                </tr>
+                <tr>
+                  <td><code>load(reader)</code></td>
+                  <td>the next value</td>
+                </tr>
+              </table>
+            </div>
+            <div>
+              <div class="code">
+                <button class="copy" data-copy>copy</button>
+                <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(</span><span class="tok-n">42</span><span class="tok-n">)</span>
+<span class="tok-c">// 01 ff 04 2a 00 00 00</span>
+
+<span class="tok-k">let</span> back <span class="tok-n">:</span> <span class="tok-n">Int</span> <span class="tok-n">=</span> <span class="tok-n">@lib.loads(bytes)</span>
+<span class="tok-c">// 42</span>
+
+<span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">ty</span>(<span class="tok-n">_</span>) {
+  <span class="tok-n">TypeId::Int64</span>
+}
+
+<span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">write_data</span>(<span class="tok-n">self</span>, <span class="tok-n">w</span>) {
+  <span class="tok-n">w.write_i64(self.0)</span>
+}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="wrap">
+          <p class="kicker">Row format</p>
+          <h2>One field, without the rest.</h2>
+          <p class="lede-2">
+            Give the schema once. Set fields by index, finish, and open a cursor over
+            the bytes. Reading field 1 never touches field 0.
+          </p>
+          <div class="code">
+            <button class="copy" data-copy>copy</button>
+            <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@lib.RowSchema::new(</span>[
+  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
+])
+
+<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@lib.Row::new(schema)</span>
+<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@lib.RowValue::Int64(</span><span class="tok-n">7L</span>))         <span class="tok-c">// id</span>
+<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@lib.RowValue::String(</span><span class="tok-s">"ada"</span>))    <span class="tok-c">// name</span>
+<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@lib.RowValue::Null)             </span>  <span class="tok-c">// age</span>
+
+<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@lib.RowCursor::new(row.finish()[:], schema)</span>
+<span class="tok-n">cur.get_field(</span><span class="tok-n">1</span>)   <span class="tok-c">// "ada" — field 0 never read</span>
+<span class="tok-n">cur.is_null(</span><span class="tok-n">2</span>)     <span class="tok-c">// true</span></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="wrap">
+          <div class="ledger">
+            <div class="entry">
+              <span class="num">—</span>
+              <h3>Proved, not asserted</h3>
+              <p>
+                83 tests, every one a byte fixture: our own, and the ones
+                <code>pyfory</code> writes. Every refusal has a test that provokes
+                it.
+              </p>
+            </div>
+            <div class="entry">
+              <span class="num">—</span>
+              <h3>Four backends</h3>
+              <p>
+                <code>wasm</code>, <code>wasm-gc</code>, <code>js</code> and
+                <code>native</code>, checked with <code>--deny-warn</code> in CI on
+                Linux, macOS and Windows.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <span>moonfory · Apache-2.0 · a <a href="https://github.com/moonbitstack">moonbitstack</a> package</span>
+        <span>
+          <a href="docs.html">Docs</a> ·
+          <a href="examples.html">Examples</a> ·
+          <a href="https://fory.apache.org/docs/specification/fory_xlang_serialization_spec">Specification</a>
+        </span>
+      </div>
+    </footer>
+
+    <script src="assets/app.js" defer></script>
+  </body>
+</html>
