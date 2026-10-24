@@ -5,12 +5,17 @@ import {
   "moonbitlang/core/bigint",
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
+  "moonbitstack/moondate",
 }
 
 // Values
 pub fn compare_field(FieldMeta, FieldMeta) -> Int32
 
 pub let config : Config
+
+pub fn date_of_days(Int64) -> @moondate.Date
+
+pub fn days_of_date(@moondate.Date) -> Int64
 
 pub fn[T : Codec] dump(T, @buffer.Buffer, config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> Unit raise
 
@@ -21,6 +26,12 @@ pub fn hex(Bytes) -> String
 pub fn[T : Codec] load(Reader) -> T raise
 
 pub fn[T : Codec] loads(Bytes, schemas? : Array[StructMeta], config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> T raise
+
+pub fn moment_of_parts(Int64, Int32) -> @moondate.Moment
+
+pub fn parts_of_moment(@moondate.Moment) -> (Int64, Int32)
+
+pub fn parts_of_span(@moondate.Span) -> (Int64, Int32)
 
 pub fn read_body(Reader, TypeId) -> Value raise
 
@@ -33,6 +44,8 @@ pub fn resolve(Config?, Bool?, Bool?, Bool?, Int32?, Int32?, Int32?, Wins?, OnCl
 pub let root_key : Int32
 
 pub fn[T] shared(Int32, T) -> Shared[T]
+
+pub fn span_of_parts(Int64, Int32) -> @moondate.Span
 
 pub fn unhex(String) -> Bytes raise
 
@@ -448,3 +461,6 @@ pub impl Codec for String
 pub impl Codec for Bytes
 pub impl[T : Codec] Codec for Array[T]
 pub impl[K : Codec + Hash + Eq, V : Codec] Codec for Map[K, V]
+pub impl Codec for @moondate.Date
+pub impl Codec for @moondate.Moment
+pub impl Codec for @moondate.Span

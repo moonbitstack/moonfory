@@ -17,4 +17,5 @@ import {
   "moonbitlang/core/encoding/utf16",
   "moonbitstack/moonvar/leb128",
   "moonbitstack/moonvar/fixed",
+  "moonbitstack/moondate",
 }
