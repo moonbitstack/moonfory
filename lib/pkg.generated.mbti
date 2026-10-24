@@ -172,6 +172,83 @@ pub fn RefFlag::equal(Self, Self) -> Bool
 pub fn RefFlag::not_equal(Self, Self) -> Bool
 pub fn RefFlag::to_repr(Self) -> @debug.Repr
 
+pub(all) struct Row {
+  schema : RowSchema
+  values : Array[RowValue?]
+}
+pub fn Row::finish(Self) -> Bytes raise
+pub fn Row::new(RowSchema) -> Self
+pub fn Row::set(Self, Int32, RowValue) -> Unit raise
+
+pub struct RowCursor {
+  view : BytesView
+  schema : RowSchema
+  bitmap_size : Int32
+  fixed : Int32
+  base : Int32
+}
+pub fn RowCursor::get_field(Self, Int32) -> RowValue raise
+pub fn RowCursor::is_null(Self, Int32) -> Bool
+pub fn RowCursor::length(Self) -> Int32
+pub fn RowCursor::new(BytesView, RowSchema, base? : Int32) -> Self
+
+pub(all) struct RowField {
+  name : String
+  ty : RowType
+  nullable : Bool
+} derive(Eq, @debug.Debug)
+pub fn RowField::equal(Self, Self) -> Bool
+pub fn RowField::not_equal(Self, Self) -> Bool
+pub fn RowField::to_repr(Self) -> @debug.Repr
+
+pub(all) struct RowSchema {
+  fields : Array[RowField]
+}
+pub fn RowSchema::new(Array[RowField]) -> Self
+
+pub(all) enum RowType {
+  Bool
+  Int8
+  Int16
+  Int32
+  Int64
+  Float32
+  Float64
+  String
+  Binary
+  Timestamp
+  Date
+  Duration
+  Array(RowType)
+  Map(RowType, RowType)
+  Struct(Array[RowField])
+} derive(Eq, @debug.Debug)
+pub fn RowType::equal(Self, Self) -> Bool
+pub fn RowType::not_equal(Self, Self) -> Bool
+pub fn RowType::to_repr(Self) -> @debug.Repr
+
+pub(all) enum RowValue {
+  Null
+  Bool(Bool)
+  Int8(Int32)
+  Int16(Int32)
+  Int32(Int32)
+  Int64(Int64)
+  Float32(Double)
+  Float64(Double)
+  String(String)
+  Binary(Bytes)
+  Timestamp(Int64)
+  Date(Int32)
+  Duration(Int64)
+  Array(Array[RowValue])
+  Map(Array[(RowValue, RowValue)])
+  Struct(Array[RowValue])
+} derive(Eq, @debug.Debug)
+pub fn RowValue::equal(Self, Self) -> Bool
+pub fn RowValue::not_equal(Self, Self) -> Bool
+pub fn RowValue::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Shared[T] {
   key : Int32
   value : T
