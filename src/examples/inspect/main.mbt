@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// The command this repository installs: a message read out loud.
+/// A message read out loud.
 ///
-///     moon run bin -- 01ff0702
-///     moon run bin -- 01ff1511164e4c75
+///     moon run src/examples/inspect -- 01ff0702
+///     moon run src/examples/inspect -- 01ff1511164e4c75
 ///
 /// Given hexadecimal, it reads the message and prints the value in it, or the
 /// refusal and where in the bytes it happened. Given nothing, it prints the
@@ -22,9 +22,9 @@ fn main {
     text = text + args[i]
   }
   try {
-    let bytes = @lib.unhex(text)
-    let value : @lib.Value = @lib.loads(bytes)
-    println(@lib.hex(bytes))
+    let bytes = @moonfory.unhex(text)
+    let value : @moonfory.Value = @moonfory.loads(bytes)
+    println(@moonfory.hex(bytes))
     println(value.to_string())
   } catch {
     failure => {
@@ -42,7 +42,7 @@ fn table() -> Unit {
   println("moonfory - the cross-language types")
   println("")
   for code in 0..<57 {
-    match @lib.TypeId::of(code) {
+    match @moonfory.TypeId::of(code) {
       Some(t) => println("  " + pad(code.to_string(), 3) + "  " + t.to_string())
       None => ()
     }

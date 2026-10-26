@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// Everything this package does, in one run: `moon run examples/tour`.
+/// Everything this package does, in one run: `moon run src/examples/tour`.
 ///
 /// A format is a promise about bytes, and a promise is checked by looking at
 /// them, so every section prints what it wrote as hexadecimal next to what
@@ -22,26 +22,29 @@ fn main raise {
   show("Map {\"a\": 1}", { "a": 1 })
   let empty : Array[Int32] = []
   show("empty Array", empty)
-  show("nothing at all", @lib.Value::Null)
+  show("nothing at all", @moonfory.Value::Null)
 
   section("a struct, written down once")
-  let point = @lib.StructMeta::new("Point", 1, [
-    @lib.FieldMeta::new("x", @lib.TypeId::Int32),
-    @lib.FieldMeta::new("y", @lib.TypeId::Int32),
+  let point = @moonfory.StructMeta::new("Point", 1, [
+    @moonfory.FieldMeta::new("x", @moonfory.TypeId::Int32),
+    @moonfory.FieldMeta::new("y", @moonfory.TypeId::Int32),
   ])
-  let written = @lib.Value::Struct(point, [
-    ("x", @lib.Value::Int(1L)),
-    ("y", @lib.Value::Int(2L)),
+  let written = @moonfory.Value::Struct(point, [
+    ("x", @moonfory.Value::Int(1L)),
+    ("y", @moonfory.Value::Int(2L)),
   ])
   show("Point(1, 2)", written, schemas=[point])
 
   section("a value that is written more than once")
-  let twice = [@lib.shared(7, "once"), @lib.shared(7, "once")]
+  let twice = [@moonfory.shared(7, "once"), @moonfory.shared(7, "once")]
   try {
-    let tracked = @lib.dumps(twice, track_ref=true)
-    let back : Array[@lib.Shared[String]] = @lib.loads(tracked, track_ref=true)
+    let tracked = @moonfory.dumps(twice, track_ref=true)
+    let back : Array[@moonfory.Shared[String]] = @moonfory.loads(
+      tracked,
+      track_ref=true,
+    )
     let values = back.map(fn(one) { one.value })
-    println("  " + pad(@lib.hex(tracked), 40) + "  " + join(values))
+    println("  " + pad(@moonfory.hex(tracked), 40) + "  " + join(values))
   } catch {
     failure => println("  refused  " + failure.to_string())
   } noraise {
@@ -49,23 +52,23 @@ fn main raise {
   }
 
   section("a row, read by field")
-  let schema = @lib.RowSchema::new([
-    { name: "id", ty: @lib.RowType::Int64, nullable: false, },
-    { name: "name", ty: @lib.RowType::String, nullable: false, },
-    { name: "age", ty: @lib.RowType::Int32, nullable: true, },
+  let schema = @moonfory.RowSchema::new([
+    { name: "id", ty: @moonfory.RowType::Int64, nullable: false, },
+    { name: "name", ty: @moonfory.RowType::String, nullable: false, },
+    { name: "age", ty: @moonfory.RowType::Int32, nullable: true, },
   ])
-  let row = @lib.Row::new(schema)
-  row.set(0, @lib.RowValue::Int64(7L))
-  row.set(1, @lib.RowValue::String("ada"))
-  row.set(2, @lib.RowValue::Null)
+  let row = @moonfory.Row::new(schema)
+  row.set(0, @moonfory.RowValue::Int64(7L))
+  row.set(1, @moonfory.RowValue::String("ada"))
+  row.set(2, @moonfory.RowValue::Null)
   try {
     let row_bytes = row.finish()
-    let cur = @lib.RowCursor::new(row_bytes[:], schema)
+    let cur = @moonfory.RowCursor::new(row_bytes[:], schema)
     println(
       "  " +
       pad("id, name, age", 18) +
       "  " +
-      pad(@lib.hex(row_bytes), 40) +
+      pad(@moonfory.hex(row_bytes), 40) +
       "  " +
       "\{@debug.Debug::to_repr(cur.get_field(1))}",
     )
@@ -76,9 +79,9 @@ fn main raise {
   }
 
   section("the time types, through moondate")
-  show("Date 19000d", @lib.date_of_days(19_000L))
-  show("Moment 1.7e9", @lib.moment_of_parts(1_700_000_000L, 0))
-  show("Span 3.5s", @lib.span_of_parts(3L, 500_000_000))
+  show("Date 19000d", @moonfory.date_of_days(19_000L))
+  show("Moment 1.7e9", @moonfory.moment_of_parts(1_700_000_000L, 0))
+  show("Span 3.5s", @moonfory.span_of_parts(3L, 500_000_000))
 
   section("a message written by another language")
   for
@@ -106,19 +109,19 @@ fn main raise {
 }
 
 ///|
-fn[T : @lib.Codec + Debug] show(
+fn[T : @moonfory.Codec + Debug] show(
   label : String,
   value : T,
-  schemas~ : Array[@lib.StructMeta] = [],
+  schemas~ : Array[@moonfory.StructMeta] = [],
 ) -> Unit {
   try {
-    let bytes = @lib.dumps(value)
-    let back : T = @lib.loads(bytes, schemas~)
+    let bytes = @moonfory.dumps(value)
+    let back : T = @moonfory.loads(bytes, schemas~)
     println(
       "  " +
       pad(label, 18) +
       "  " +
-      pad(@lib.hex(bytes), 40) +
+      pad(@moonfory.hex(bytes), 40) +
       "  " +
       "\{@debug.Debug::to_repr(back)}",
     )
@@ -133,7 +136,7 @@ fn[T : @lib.Codec + Debug] show(
 ///|
 fn read(text : String) -> String {
   try {
-    let value : @lib.Value = @lib.loads(@lib.unhex(text))
+    let value : @moonfory.Value = @moonfory.loads(@moonfory.unhex(text))
     value.to_string()
   } catch {
     failure => "refused  " + failure.to_string()

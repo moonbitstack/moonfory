@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbitstack/moonfory/lib"
+package "moonbitstack/moonfory"
 
 import {
   "moonbitlang/core/bigint",

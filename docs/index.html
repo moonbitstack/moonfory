@@ -158,10 +158,10 @@
             <div>
               <div class="code">
                 <button class="copy" data-copy>copy</button>
-                <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(</span><span class="tok-n">42</span><span class="tok-n">)</span>
+                <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span><span class="tok-n">42</span><span class="tok-n">)</span>
 <span class="tok-c">// 01 ff 04 2a 00 00 00</span>
 
-<span class="tok-k">let</span> back <span class="tok-n">:</span> <span class="tok-n">Int</span> <span class="tok-n">=</span> <span class="tok-n">@lib.loads(bytes)</span>
+<span class="tok-k">let</span> back <span class="tok-n">:</span> <span class="tok-n">Int</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.loads(bytes)</span>
 <span class="tok-c">// 42</span>
 
 <span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">ty</span>(<span class="tok-n">_</span>) {
@@ -187,18 +187,18 @@
           </p>
           <div class="code">
             <button class="copy" data-copy>copy</button>
-            <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@lib.RowSchema::new(</span>[
-  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
+            <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowSchema::new(</span>[
+  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
 ])
 
-<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@lib.Row::new(schema)</span>
-<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@lib.RowValue::Int64(</span><span class="tok-n">7L</span>))         <span class="tok-c">// id</span>
-<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@lib.RowValue::String(</span><span class="tok-s">"ada"</span>))    <span class="tok-c">// name</span>
-<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@lib.RowValue::Null)             </span>  <span class="tok-c">// age</span>
+<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@moonfory.Row::new(schema)</span>
+<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@moonfory.RowValue::Int64(</span><span class="tok-n">7L</span>))         <span class="tok-c">// id</span>
+<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@moonfory.RowValue::String(</span><span class="tok-s">"ada"</span>))    <span class="tok-c">// name</span>
+<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@moonfory.RowValue::Null)             </span>  <span class="tok-c">// age</span>
 
-<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@lib.RowCursor::new(row.finish()[:], schema)</span>
+<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowCursor::new(row.finish()[:], schema)</span>
 <span class="tok-n">cur.get_field(</span><span class="tok-n">1</span>)   <span class="tok-c">// "ada" — field 0 never read</span>
 <span class="tok-n">cur.is_null(</span><span class="tok-n">2</span>)     <span class="tok-c">// true</span></pre>
           </div>

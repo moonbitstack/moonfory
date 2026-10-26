@@ -16,34 +16,34 @@ fn outcome(f : () -> Unit raise) -> String {
 
 ///|
 /// `n` lists, one inside the next.
-fn nest(n : Int32) -> @lib.Value {
-  let mut v = @lib.Value::Int(1L)
+fn nest(n : Int32) -> @moonfory.Value {
+  let mut v = @moonfory.Value::Int(1L)
   for _ in 0..<n {
-    v = @lib.Value::List(@lib.TypeId::List, [v])
+    v = @moonfory.Value::List(@moonfory.TypeId::List, [v])
   }
   v
 }
 
 ///|
 test "a typed value is written in the width its type asks for" {
-  inspect(@lib.hex(@lib.dumps(1)), content="01ff0401000000")
-  inspect(@lib.hex(@lib.dumps(1L)), content="01ff060100000000000000")
-  inspect(@lib.hex(@lib.dumps(1U)), content="01ff0b01000000")
-  inspect(@lib.hex(@lib.dumps(1UL)), content="01ff0d0100000000000000")
-  inspect(@lib.hex(@lib.dumps(true)), content="01ff0101")
-  inspect(@lib.hex(@lib.dumps(1.5)), content="01ff14000000000000f83f")
-  inspect(@lib.hex(@lib.dumps("ab")), content="01ff150a6162")
+  inspect(@moonfory.hex(@moonfory.dumps(1)), content="01ff0401000000")
+  inspect(@moonfory.hex(@moonfory.dumps(1L)), content="01ff060100000000000000")
+  inspect(@moonfory.hex(@moonfory.dumps(1U)), content="01ff0b01000000")
+  inspect(@moonfory.hex(@moonfory.dumps(1UL)), content="01ff0d0100000000000000")
+  inspect(@moonfory.hex(@moonfory.dumps(true)), content="01ff0101")
+  inspect(@moonfory.hex(@moonfory.dumps(1.5)), content="01ff14000000000000f83f")
+  inspect(@moonfory.hex(@moonfory.dumps("ab")), content="01ff150a6162")
 }
 
 ///|
 test "a typed value is read in whatever width the peer chose" {
-  let narrow : Int32 = @lib.loads(@lib.unhex("01ff0702"))
+  let narrow : Int32 = @moonfory.loads(@moonfory.unhex("01ff0702"))
   inspect(narrow, content="1")
-  let wide : Int64 = @lib.loads(@lib.unhex("01ff0401000000"))
+  let wide : Int64 = @moonfory.loads(@moonfory.unhex("01ff0401000000"))
   inspect(wide, content="1")
-  let tiny : Int32 = @lib.loads(@lib.unhex("01ff0201"))
+  let tiny : Int32 = @moonfory.loads(@moonfory.unhex("01ff0201"))
   inspect(tiny, content="1")
-  let unsigned : UInt64 = @lib.loads(@lib.unhex("01ff0b01000000"))
+  let unsigned : UInt64 = @moonfory.loads(@moonfory.unhex("01ff0b01000000"))
   inspect(unsigned, content="1")
 }
 
@@ -51,14 +51,16 @@ test "a typed value is read in whatever width the peer chose" {
 test "a sixty-four-bit integer asked for as thirty-two is refused, not cut" {
   inspect(
     outcome(fn() raise {
-      let _ : Int32 = @lib.loads(@lib.unhex("01ff07808080808040"))
+      let _ : Int32 = @moonfory.loads(@moonfory.unhex("01ff07808080808040"))
       ()
     }).has_prefix("TooLarge"),
     content="true",
   )
   inspect(
     outcome(fn() raise {
-      let _ : UInt32 = @lib.loads(@lib.unhex("01ff0d0000000001000000"))
+      let _ : UInt32 = @moonfory.loads(
+        @moonfory.unhex("01ff0d0000000001000000"),
+      )
       ()
     }).has_prefix("TooLarge"),
     content="true",
@@ -69,28 +71,30 @@ test "a sixty-four-bit integer asked for as thirty-two is refused, not cut" {
 test "a message that is not one is refused, and says where" {
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(@lib.unhex("00ff0702"))
+      let _ : @moonfory.Value = @moonfory.loads(@moonfory.unhex("00ff0702"))
       ()
     }),
     content="BadHeader(at=0, got=0)",
   )
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(@lib.unhex("01ff040100"))
+      let _ : @moonfory.Value = @moonfory.loads(@moonfory.unhex("01ff040100"))
       ()
     }),
     content="Truncated(at=3, want=4, got=2)",
   )
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(@lib.unhex("01ff070201ff0702"))
+      let _ : @moonfory.Value = @moonfory.loads(
+        @moonfory.unhex("01ff070201ff0702"),
+      )
       ()
     }),
     content="Trailing(at=4, got=4)",
   )
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(@lib.unhex("01ff3901"))
+      let _ : @moonfory.Value = @moonfory.loads(@moonfory.unhex("01ff3901"))
       ()
     }),
     content="BadType(at=2, got=57)",
@@ -99,13 +103,13 @@ test "a message that is not one is refused, and says where" {
 
 ///|
 test "a message nested deeper than the reader allows is refused before the stack is" {
-  let five = @lib.dumps(nest(5))
-  let back : @lib.Value = @lib.loads(five)
+  let five = @moonfory.dumps(nest(5))
+  let back : @moonfory.Value = @moonfory.loads(five)
   inspect(back == nest(5), content="true")
-  let six = @lib.dumps(nest(6))
+  let six = @moonfory.dumps(nest(6))
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(six)
+      let _ : @moonfory.Value = @moonfory.loads(six)
       ()
     }).has_prefix("TooDeep"),
     content="true",
@@ -118,10 +122,10 @@ test "a message that declares more payload than the reader allows is refused" {
   for _ in 0..<200 {
     out.write_char('x')
   }
-  let bytes = @lib.dumps(@lib.Value::Str(out.to_string()))
+  let bytes = @moonfory.dumps(@moonfory.Value::Str(out.to_string()))
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(bytes, graph=10)
+      let _ : @moonfory.Value = @moonfory.loads(bytes, graph=10)
       ()
     }).has_prefix("TooLarge"),
     content="true",
@@ -130,13 +134,13 @@ test "a message that declares more payload than the reader allows is refused" {
 
 ///|
 test "the cross-language flag is written either way, and read the way it was asked for" {
-  let bytes = @lib.dumps(@lib.Value::Int(1L), xlang=false)
-  inspect(@lib.hex(bytes), content="00ff060100000000000000")
-  let back : @lib.Value = @lib.loads(bytes, xlang=false)
+  let bytes = @moonfory.dumps(@moonfory.Value::Int(1L), xlang=false)
+  inspect(@moonfory.hex(bytes), content="00ff060100000000000000")
+  let back : @moonfory.Value = @moonfory.loads(bytes, xlang=false)
   inspect(back, content="Int(1)")
   inspect(
     outcome(fn() raise {
-      let _ : @lib.Value = @lib.loads(bytes)
+      let _ : @moonfory.Value = @moonfory.loads(bytes)
       ()
     }),
     content="BadHeader(at=0, got=0)",
@@ -145,12 +149,15 @@ test "the cross-language flag is written either way, and read the way it was ask
 
 ///|
 test "a value written twice is sent once and pointed at, when tracking is on" {
-  let bytes = @lib.dumps(
-    [@lib.shared(7, "once"), @lib.shared(7, "once")],
+  let bytes = @moonfory.dumps(
+    [@moonfory.shared(7, "once"), @moonfory.shared(7, "once")],
     track_ref=true,
   )
-  inspect(@lib.hex(bytes), content="01001602081500126f6e6365fe01")
-  let back : Array[@lib.Shared[String]] = @lib.loads(bytes, track_ref=true)
+  inspect(@moonfory.hex(bytes), content="01001602081500126f6e6365fe01")
+  let back : Array[@moonfory.Shared[String]] = @moonfory.loads(
+    bytes,
+    track_ref=true,
+  )
   inspect(back.length(), content="2")
   inspect(back[0].value, content="once")
   inspect(back[1].value, content="once")
@@ -158,16 +165,19 @@ test "a value written twice is sent once and pointed at, when tracking is on" {
 
 ///|
 test "with tracking off, a shared value is written as itself, twice" {
-  let bytes = @lib.dumps([@lib.shared(7, "once"), @lib.shared(7, "once")])
-  inspect(@lib.hex(bytes), content="01ff16020815ff126f6e6365ff126f6e6365")
-  let back : Array[@lib.Shared[String]] = @lib.loads(bytes)
+  let bytes = @moonfory.dumps([
+    @moonfory.shared(7, "once"),
+    @moonfory.shared(7, "once"),
+  ])
+  inspect(@moonfory.hex(bytes), content="01ff16020815ff126f6e6365ff126f6e6365")
+  let back : Array[@moonfory.Shared[String]] = @moonfory.loads(bytes)
   inspect(back.length(), content="2")
 }
 
 ///|
 test "the library preset is beaten by the record, and the record by the flat mirrors" {
-  let given = @lib.Config::new(track_ref=false)
-  let merged = @lib.resolve(
+  let given = @moonfory.Config::new(track_ref=false)
+  let merged = @moonfory.resolve(
     Some(given),
     None,
     Some(true),
@@ -179,7 +189,7 @@ test "the library preset is beaten by the record, and the record by the flat mir
     None,
   )
   inspect(merged.track_ref, content="true")
-  let preset = @lib.resolve(
+  let preset = @moonfory.resolve(
     None,
     None,
     None,
@@ -196,8 +206,8 @@ test "the library preset is beaten by the record, and the record by the flat mir
 
 ///|
 test "wins turns the order around" {
-  let given = @lib.Config::new(track_ref=false)
-  let base = @lib.resolve(
+  let given = @moonfory.Config::new(track_ref=false)
+  let base = @moonfory.resolve(
     Some(given),
     None,
     Some(true),
@@ -205,7 +215,7 @@ test "wins turns the order around" {
     None,
     None,
     None,
-    Some(@lib.Wins::Base),
+    Some(@moonfory.Wins::Base),
     None,
   )
   inspect(base.track_ref, content="false")
@@ -215,8 +225,8 @@ test "wins turns the order around" {
 test "a setting given twice is refused when the caller asks to hear about it" {
   inspect(
     outcome(fn() raise {
-      let _ = @lib.resolve(
-        Some(@lib.Config::new(track_ref=false)),
+      let _ = @moonfory.resolve(
+        Some(@moonfory.Config::new(track_ref=false)),
         None,
         Some(true),
         None,
@@ -224,7 +234,7 @@ test "a setting given twice is refused when the caller asks to hear about it" {
         None,
         None,
         None,
-        Some(@lib.OnClash::Panic),
+        Some(@moonfory.OnClash::Panic),
       )
       ()
     }),
@@ -234,8 +244,8 @@ test "a setting given twice is refused when the caller asks to hear about it" {
 
 ///|
 test "the same setting twice agreed on is not a clash" {
-  let same = @lib.resolve(
-    Some(@lib.Config::new(track_ref=false)),
+  let same = @moonfory.resolve(
+    Some(@moonfory.Config::new(track_ref=false)),
     None,
     Some(false),
     None,
@@ -243,15 +253,15 @@ test "the same setting twice agreed on is not a clash" {
     None,
     None,
     None,
-    Some(@lib.OnClash::Panic),
+    Some(@moonfory.OnClash::Panic),
   )
   inspect(same.track_ref, content="false")
 }
 
 ///|
 test "a setting given twice can be handed to the caller's own function" {
-  let handled = @lib.resolve(
-    Some(@lib.Config::new(depth=9)),
+  let handled = @moonfory.resolve(
+    Some(@moonfory.Config::new(depth=9)),
     None,
     None,
     None,
@@ -260,7 +270,7 @@ test "a setting given twice can be handed to the caller's own function" {
     None,
     None,
     Some(
-      @lib.OnClash::Handle(fn(record, merged) {
+      @moonfory.OnClash::Handle(fn(record, merged) {
         if record.depth > merged.depth {
           record
         } else {
@@ -275,14 +285,14 @@ test "a setting given twice can be handed to the caller's own function" {
 ///|
 test "a stream of messages written one after another is read back in order" {
   let buffer = Buffer()
-  @lib.dump(@lib.Value::Int(1L), buffer)
-  @lib.dump(@lib.Value::Int(2L), buffer)
-  let reader = @lib.Reader::new(buffer.to_bytes())
+  @moonfory.dump(@moonfory.Value::Int(1L), buffer)
+  @moonfory.dump(@moonfory.Value::Int(2L), buffer)
+  let reader = @moonfory.Reader::new(buffer.to_bytes())
   reader.read_head()
-  let first : @lib.Value = @lib.load(reader)
+  let first : @moonfory.Value = @moonfory.load(reader)
   inspect(first, content="Int(1)")
   reader.read_head()
-  let second : @lib.Value = @lib.load(reader)
+  let second : @moonfory.Value = @moonfory.load(reader)
   inspect(second, content="Int(2)")
   inspect(reader.is_done(), content="true")
 }

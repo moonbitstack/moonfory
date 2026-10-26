@@ -5,22 +5,14 @@ binary format** that Java, Go, Python, Rust and C++ already read, and the **row
 format** that lets a reader take one field without building the object.
 
 ```moonbit
-let bytes = @lib.dumps(42)          // 01 ff 04 2a 00 00 00
-let back  : Int = @lib.loads(bytes)
+let bytes = @moonfory.dumps(42)          // 01 ff 04 2a 00 00 00
+let back  : Int = @moonfory.loads(bytes)
 ```
 
 The bytes are not this package's opinion. They are the ones
 [the specification](https://fory.apache.org/docs/specification/fory_xlang_serialization_spec)
 fixes, and the tests assert them one at a time — including the bytes `pyfory`
 writes, which this package reads back unchanged.
-
-## Status
-
-Implemented and tested: the type table, the header, the reference flags, the
-variable and fixed widths, strings, lists, sets, maps, structs, enums, the dense
-arrays, decimal, and the three time types, plus the standard row format with
-random field access. `moon check --target all --deny-warn`, `moon build`,
-`moon test` and `moon info` all pass on `wasm`, `wasm-gc`, `js` and `native`.
 
 ## Install
 
@@ -32,7 +24,7 @@ In `moon.pkg`:
 
 ```moonbit
 import {
-  "moonbitstack/moonfory/lib",
+  "moonbitstack/moonfory",
 }
 ```
 
@@ -47,12 +39,12 @@ what you want when a message is one part of a larger stream.
 
 ```moonbit
 // One value, all of it.
-let bytes : Bytes = @lib.dumps(value)
-let value : T     = @lib.loads(bytes)
+let bytes : Bytes = @moonfory.dumps(value)
+let value : T     = @moonfory.loads(bytes)
 
 // The same, without allocating a fresh buffer.
-@lib.dump(value, buffer)
-let value : T = @lib.load(reader)
+@moonfory.dump(value, buffer)
+let value : T = @moonfory.load(reader)
 ```
 
 | Function | Takes | Gives |
@@ -151,13 +143,13 @@ error, and `clash=Handle(f)` lets you arbitrate.
 
 ```moonbit
 // The preset, with one field changed.
-@lib.dumps(v, track_ref=true)
+@moonfory.dumps(v, track_ref=true)
 
 // A whole config, then one field overridden on top of it.
-@lib.dumps(v, config=my_config, depth=8)
+@moonfory.dumps(v, config=my_config, depth=8)
 
 // Refuse rather than pick when the two disagree.
-@lib.dumps(v, config=my_config, xlang=false, clash=Panic)
+@moonfory.dumps(v, config=my_config, xlang=false, clash=Panic)
 ```
 
 ## Shared and circular values
@@ -169,9 +161,9 @@ reader's node table, and a cycle that cannot be resolved is a `Cyclic` refusal
 rather than a hang.
 
 ```moonbit
-let once = @lib.shared(7, "the same string")
+let once = @moonfory.shared(7, "the same string")
 let twice = [once, once]                    // two references, one body
-let bytes = @lib.dumps(twice, track_ref=true)
+let bytes = @moonfory.dumps(twice, track_ref=true)
 ```
 
 Turn `track_ref` on for both ends, or neither: a reader that is not tracking
@@ -184,19 +176,19 @@ whether the field needs them or not, so field `i` is always at
 `bitmap + i * 8`. A reader takes one field and leaves the rest alone.
 
 ```moonbit
-let schema = @lib.RowSchema::new([
-  { name: "id",   ty: @lib.RowType::Int64,  nullable: false },
-  { name: "name", ty: @lib.RowType::String, nullable: false },
-  { name: "age",  ty: @lib.RowType::Int32,  nullable: true  },
+let schema = @moonfory.RowSchema::new([
+  { name: "id",   ty: @moonfory.RowType::Int64,  nullable: false },
+  { name: "name", ty: @moonfory.RowType::String, nullable: false },
+  { name: "age",  ty: @moonfory.RowType::Int32,  nullable: true  },
 ])
 
-let row = @lib.Row::new(schema)
-row.set(0, @lib.RowValue::Int64(7L))
-row.set(1, @lib.RowValue::String("ada"))
-row.set(2, @lib.RowValue::Null)
+let row = @moonfory.Row::new(schema)
+row.set(0, @moonfory.RowValue::Int64(7L))
+row.set(1, @moonfory.RowValue::String("ada"))
+row.set(2, @moonfory.RowValue::Null)
 
 let bytes = row.finish()
-let cur = @lib.RowCursor::new(bytes[:], schema)
+let cur = @moonfory.RowCursor::new(bytes[:], schema)
 cur.get_field(1)                 // RowValue::String("ada"), field 0 never read
 cur.is_null(2)                   // true
 ```
@@ -214,10 +206,10 @@ Through `moonbitstack/moondate`, so a MoonBit program never spells out epoch
 seconds:
 
 ```moonbit
-let date   = @lib.date_of_days(19_000L)                 // a Date, as DATE
-let moment = @lib.moment_of_parts(1_700_000_000L, 0)    // a Moment, as TIMESTAMP
-let span   = @lib.span_of_parts(3L, 500_000_000)        // a Span, as DURATION
-@lib.dumps(moment)                                      // and back through loads
+let date   = @moonfory.date_of_days(19_000L)                 // a Date, as DATE
+let moment = @moonfory.moment_of_parts(1_700_000_000L, 0)    // a Moment, as TIMESTAMP
+let span   = @moonfory.span_of_parts(3L, 500_000_000)        // a Span, as DURATION
+@moonfory.dumps(moment)                                      // and back through loads
 ```
 
 Nanoseconds are always the sub-second part, in `[0, 1e9)`, so a value of 1.5
@@ -251,22 +243,13 @@ malformed message names where it stopped rather than "invalid input".
 | `Trailing(at, got)` | bytes remain after the one message |
 | `Unsupported(kind)` | the type has no counterpart here |
 
-## Tests and CI
-
-`moon test` runs 83 tests. They are byte fixtures, not smoke tests: every one
-asserts the exact bytes, either this package's own or `pyfory`'s, and every
-refusal has a test that provokes it. CI checks `wasm`, `wasm-gc`, `js` and
-`native` with `--deny-warn`, formats, builds, tests, and diffs the generated
-interface so it cannot drift.
-
 ## Specifications
 
 - [Fory cross-language serialization](https://fory.apache.org/docs/specification/fory_xlang_serialization_spec)
 - [Fory row format](https://fory.apache.org/docs/specification/fory_row_format_spec)
 - [Fory type mapping](https://fory.apache.org/docs/specification/fory_type_mapping)
 
-Implemented from those documents, not from another implementation's source.
 
-## License
+## Licence
 
 Apache-2.0. See [LICENSE](LICENSE).

@@ -7,7 +7,7 @@
 /// same road in the other direction: bytes this package wrote, which `pyfory`
 /// reads.
 fn read(text : String) -> String raise {
-  let value : @lib.Value = @lib.loads(@lib.unhex(text))
+  let value : @moonfory.Value = @moonfory.loads(@moonfory.unhex(text))
   value.to_string()
 }
 
@@ -57,15 +57,21 @@ test "the rest of what Python writes" {
 /// same values.
 test "what this package writes, read by another language" {
   let bytes = [
-    (@lib.dumps(@lib.Value::Int(1L)), "01ff060100000000000000"),
-    (@lib.dumps(@lib.Value::Str("ab")), "01ff150a6162"),
-    (@lib.dumps(@lib.Value::Binary(@lib.unhex("6162"))), "01ff29026162"),
-    (@lib.dumps(@lib.Value::Bool(true)), "01ff0101"),
-    (@lib.dumps(@lib.Value::Float(1.5)), "01ff14000000000000f83f"),
-    (@lib.dumps(@lib.Value::List(@lib.TypeId::List, [])), "01ff1600"),
-    (@lib.dumps(@lib.Value::Null), "01fd"),
+    (@moonfory.dumps(@moonfory.Value::Int(1L)), "01ff060100000000000000"),
+    (@moonfory.dumps(@moonfory.Value::Str("ab")), "01ff150a6162"),
+    (
+      @moonfory.dumps(@moonfory.Value::Binary(@moonfory.unhex("6162"))),
+      "01ff29026162",
+    ),
+    (@moonfory.dumps(@moonfory.Value::Bool(true)), "01ff0101"),
+    (@moonfory.dumps(@moonfory.Value::Float(1.5)), "01ff14000000000000f83f"),
+    (
+      @moonfory.dumps(@moonfory.Value::List(@moonfory.TypeId::List, [])),
+      "01ff1600",
+    ),
+    (@moonfory.dumps(@moonfory.Value::Null), "01fd"),
   ]
   for (wrote, text) in bytes {
-    inspect(@lib.hex(wrote), content=text)
+    inspect(@moonfory.hex(wrote), content=text)
   }
 }

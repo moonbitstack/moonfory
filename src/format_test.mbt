@@ -4,10 +4,10 @@
 ///|
 /// Bytes as hexadecimal: every fixture below is the specification's, written
 /// down.
-fn wrote(f : (@lib.Writer) -> Unit) -> String {
-  let w = @lib.Writer::new()
+fn wrote(f : (@moonfory.Writer) -> Unit) -> String {
+  let w = @moonfory.Writer::new()
   f(w)
-  @lib.hex(w.bytes())
+  @moonfory.hex(w.bytes())
 }
 
 ///|
@@ -22,12 +22,12 @@ fn repeated(c : Char, n : Int32) -> String {
 
 ///|
 test "the header byte carries the cross-language flag" {
-  let xlang = @lib.Writer::new()
+  let xlang = @moonfory.Writer::new()
   xlang.write_head()
-  inspect(@lib.hex(xlang.bytes()), content="01")
-  let native = @lib.Writer::new(config=@lib.Config::new(xlang=false))
+  inspect(@moonfory.hex(xlang.bytes()), content="01")
+  let native = @moonfory.Writer::new(config=@moonfory.Config::new(xlang=false))
   native.write_head()
-  inspect(@lib.hex(native.bytes()), content="00")
+  inspect(@moonfory.hex(native.bytes()), content="00")
 }
 
 ///|
@@ -121,21 +121,24 @@ test "the string header is one byte while it fits in seven bits" {
 
 ///|
 test "binary is a length and then the bytes" {
-  let two = @lib.unhex("6162")
+  let two = @moonfory.unhex("6162")
   inspect(wrote(fn(w) { w.write_binary(two) }), content="026162")
-  let none = @lib.unhex("")
+  let none = @moonfory.unhex("")
   inspect(wrote(fn(w) { w.write_binary(none) }), content="00")
 }
 
 ///|
 test "a type ID is one byte, and a user type is followed by its ID" {
-  inspect(wrote(fn(w) { w.write_type_id(@lib.TypeId::String) }), content="15")
   inspect(
-    wrote(fn(w) { w.write_user_type(@lib.TypeId::Struct, 1) }),
+    wrote(fn(w) { w.write_type_id(@moonfory.TypeId::String) }),
+    content="15",
+  )
+  inspect(
+    wrote(fn(w) { w.write_user_type(@moonfory.TypeId::Struct, 1) }),
     content="1b01",
   )
   inspect(
-    wrote(fn(w) { w.write_user_type(@lib.TypeId::Struct, 300) }),
+    wrote(fn(w) { w.write_user_type(@moonfory.TypeId::Struct, 300) }),
     content="1bac02",
   )
 }

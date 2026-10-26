@@ -67,7 +67,7 @@
         <div class="code">
           <button class="copy" data-copy>copy</button>
           <pre><span class="tok-k">import</span> {
-  <span class="tok-s">"moonbitstack/moonfory/lib"</span>,
+  <span class="tok-s">"moonbitstack/moonfory"</span>,
 }</pre>
         </div>
         <p>
@@ -86,11 +86,11 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(value)</span>
-<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span>     <span class="tok-n">=</span> <span class="tok-n">@lib.loads(bytes)</span>
+          <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(value)</span>
+<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span>     <span class="tok-n">=</span> <span class="tok-n">@moonfory.loads(bytes)</span>
 
-<span class="tok-n">@lib.dump(value, buffer)</span>
-<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span> <span class="tok-n">=</span> <span class="tok-n">@lib.load(reader)</span></pre>
+<span class="tok-n">@moonfory.dump(value, buffer)</span>
+<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.load(reader)</span></pre>
         </div>
         <table>
           <tr><th>Function</th><th>Takes</th><th>Gives</th></tr>
@@ -198,9 +198,9 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-n">@lib.dumps(v, track_ref=true)</span>
-<span class="tok-n">@lib.dumps(v, config=my_config, depth=8)</span>
-<span class="tok-n">@lib.dumps(v, config=my_config, xlang=false, clash=Panic)</span></pre>
+          <pre><span class="tok-n">@moonfory.dumps(v, track_ref=true)</span>
+<span class="tok-n">@moonfory.dumps(v, config=my_config, depth=8)</span>
+<span class="tok-n">@moonfory.dumps(v, config=my_config, xlang=false, clash=Panic)</span></pre>
         </div>
 
         <h2 id="refs">Shared and circular values</h2>
@@ -213,9 +213,9 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> once  <span class="tok-n">=</span> <span class="tok-n">@lib.shared(</span><span class="tok-n">7</span>, <span class="tok-s">"the same string"</span>)
+          <pre><span class="tok-k">let</span> once  <span class="tok-n">=</span> <span class="tok-n">@moonfory.shared(</span><span class="tok-n">7</span>, <span class="tok-s">"the same string"</span>)
 <span class="tok-k">let</span> twice <span class="tok-n">=</span> [once, once]   <span class="tok-c">// two references, one body</span>
-<span class="tok-k">let</span> bytes <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(twice, track_ref=true)</span></pre>
+<span class="tok-k">let</span> bytes <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(twice, track_ref=true)</span></pre>
         </div>
         <p>
           Turn <code>track_ref</code> on for both ends, or neither: a reader that is
@@ -231,18 +231,18 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@lib.RowSchema::new(</span>[
-  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
+          <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowSchema::new(</span>[
+  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
 ])
 
-<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@lib.Row::new(schema)</span>
-<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@lib.RowValue::Int64(</span><span class="tok-n">7L</span>))
-<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@lib.RowValue::String(</span><span class="tok-s">"ada"</span>))
-<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@lib.RowValue::Null)
+<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@moonfory.Row::new(schema)</span>
+<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@moonfory.RowValue::Int64(</span><span class="tok-n">7L</span>))
+<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@moonfory.RowValue::String(</span><span class="tok-s">"ada"</span>))
+<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@moonfory.RowValue::Null)
 
-<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@lib.RowCursor::new(row.finish()[:], schema)</span>
+<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowCursor::new(row.finish()[:], schema)</span>
 <span class="tok-n">cur.get_field(</span><span class="tok-n">1</span>)   <span class="tok-c">// RowValue::String("ada")</span>
 <span class="tok-n">cur.is_null(</span><span class="tok-n">2</span>)     <span class="tok-c">// true</span></pre>
         </div>
@@ -265,10 +265,10 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> date   <span class="tok-n">=</span> <span class="tok-n">@lib.date_of_days(</span><span class="tok-n">19_000L</span>)              <span class="tok-c">// DATE</span>
-<span class="tok-k">let</span> moment <span class="tok-n">=</span> <span class="tok-n">@lib.moment_of_parts(</span><span class="tok-n">1_700_000_000L</span>, <span class="tok-n">0</span>) <span class="tok-c">// TIMESTAMP</span>
-<span class="tok-k">let</span> span   <span class="tok-n">=</span> <span class="tok-n">@lib.span_of_parts(</span><span class="tok-n">3L</span>, <span class="tok-n">500_000_000</span>)     <span class="tok-c">// DURATION</span>
-<span class="tok-n">@lib.dumps(moment)</span>                                     <span class="tok-c">// and back</span></pre>
+          <pre><span class="tok-k">let</span> date   <span class="tok-n">=</span> <span class="tok-n">@moonfory.date_of_days(</span><span class="tok-n">19_000L</span>)              <span class="tok-c">// DATE</span>
+<span class="tok-k">let</span> moment <span class="tok-n">=</span> <span class="tok-n">@moonfory.moment_of_parts(</span><span class="tok-n">1_700_000_000L</span>, <span class="tok-n">0</span>) <span class="tok-c">// TIMESTAMP</span>
+<span class="tok-k">let</span> span   <span class="tok-n">=</span> <span class="tok-n">@moonfory.span_of_parts(</span><span class="tok-n">3L</span>, <span class="tok-n">500_000_000</span>)     <span class="tok-c">// DURATION</span>
+<span class="tok-n">@moonfory.dumps(moment)</span>                                     <span class="tok-c">// and back</span></pre>
         </div>
         <p>
           Nanoseconds are always the sub-second part, in <code>[0, 1e9)</code>, so a

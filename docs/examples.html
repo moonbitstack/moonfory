@@ -34,22 +34,22 @@
         The bytes, and what they mean.
       </h2>
       <p class="lede-2">
-        Each example below is what <code>moon run examples/tour</code> prints.
+        Each example below is what <code>moon run src/examples/tour</code> prints.
         The hex on the right is the whole message, header and all.
       </p>
 
       <h2 id="values">Values and containers</h2>
       <div class="code">
         <button class="copy" data-copy>copy</button>
-        <pre><span class="tok-k">let</span> n <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(</span><span class="tok-n">1</span>)
-<span class="tok-k">let</span> s <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(</span><span class="tok-s">"ab"</span>)
-<span class="tok-k">let</span> xs <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(</span>[<span class="tok-n">1</span>, <span class="tok-n">2</span>, <span class="tok-n">3</span>])
-<span class="tok-k">let</span> m <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(</span>{ <span class="tok-s">"a"</span>: <span class="tok-n">1</span> })
+        <pre><span class="tok-k">let</span> n <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span><span class="tok-n">1</span>)
+<span class="tok-k">let</span> s <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span><span class="tok-s">"ab"</span>)
+<span class="tok-k">let</span> xs <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span>[<span class="tok-n">1</span>, <span class="tok-n">2</span>, <span class="tok-n">3</span>])
+<span class="tok-k">let</span> m <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span>{ <span class="tok-s">"a"</span>: <span class="tok-n">1</span> })
 
-<span class="tok-n">println(@lib.hex(n))</span>   <span class="tok-c">// 01ff0401000000</span>
-<span class="tok-n">println(@lib.hex(s))</span>   <span class="tok-c">// 01ff150a6162</span>
-<span class="tok-n">println(@lib.hex(xs))</span>  <span class="tok-c">// 01ff16030804010000000200000003000000</span>
-<span class="tok-n">println(@lib.hex(m))</span>   <span class="tok-c">// 01ff180100011504066101000000</span></pre>
+<span class="tok-n">println(@moonfory.hex(n))</span>   <span class="tok-c">// 01ff0401000000</span>
+<span class="tok-n">println(@moonfory.hex(s))</span>   <span class="tok-c">// 01ff150a6162</span>
+<span class="tok-n">println(@moonfory.hex(xs))</span>  <span class="tok-c">// 01ff16030804010000000200000003000000</span>
+<span class="tok-n">println(@moonfory.hex(m))</span>   <span class="tok-c">// 01ff180100011504066101000000</span></pre>
       </div>
       <table>
         <tr><th>Value</th><th>Message</th><th>Reading it</th></tr>
@@ -69,25 +69,25 @@
       </p>
       <div class="code">
         <button class="copy" data-copy>copy</button>
-        <pre><span class="tok-k">let</span> meta <span class="tok-n">=</span> <span class="tok-n">@lib.StructMeta::new(</span>
+        <pre><span class="tok-k">let</span> meta <span class="tok-n">=</span> <span class="tok-n">@moonfory.StructMeta::new(</span>
   <span class="tok-s">"Point"</span>,
   <span class="tok-n">1</span>,
   [
-    <span class="tok-n">@lib.FieldMeta::new(</span><span class="tok-s">"x"</span>, <span class="tok-n">@lib.TypeId::Int32</span>),
-    <span class="tok-n">@lib.FieldMeta::new(</span><span class="tok-s">"y"</span>, <span class="tok-n">@lib.TypeId::Int32</span>),
+    <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"x"</span>, <span class="tok-n">@moonfory.TypeId::Int32</span>),
+    <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"y"</span>, <span class="tok-n">@moonfory.TypeId::Int32</span>),
   ],
 )
-<span class="tok-k">let</span> point <span class="tok-n">=</span> <span class="tok-n">@lib.Value::Struct(</span>meta, [
-  (<span class="tok-s">"x"</span>, <span class="tok-n">@lib.Value::Int(</span><span class="tok-n">1L</span>)),
-  (<span class="tok-s">"y"</span>, <span class="tok-n">@lib.Value::Int(</span><span class="tok-n">2L</span>)),
+<span class="tok-k">let</span> point <span class="tok-n">=</span> <span class="tok-n">@moonfory.Value::Struct(</span>meta, [
+  (<span class="tok-s">"x"</span>, <span class="tok-n">@moonfory.Value::Int(</span><span class="tok-n">1L</span>)),
+  (<span class="tok-s">"y"</span>, <span class="tok-n">@moonfory.Value::Int(</span><span class="tok-n">2L</span>)),
 ])
-<span class="tok-n">println(@lib.hex(@lib.dumps(point)))</span>
+<span class="tok-n">println(@moonfory.hex(@moonfory.dumps(point)))</span>
 <span class="tok-c">// 01ff1b010100000002000000</span></pre>
       </div>
       <p>
         <code>1b</code> is STRUCT (27), <code>01</code> is the user type id, and
         then the two INT32 fields in Fory order. Read it back with
-        <code>@lib.loads(bytes, schemas=[meta])</code>.
+        <code>@moonfory.loads(bytes, schemas=[meta])</code>.
       </p>
 
       <h2 id="row">A row, read by field</h2>
@@ -98,17 +98,17 @@
       </p>
       <div class="code">
         <button class="copy" data-copy>copy</button>
-        <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@lib.RowSchema::new(</span>[
-  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@lib.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
+        <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowSchema::new(</span>[
+  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
+  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
 ])
-<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@lib.Row::new(schema)</span>
-<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@lib.RowValue::Int64(</span><span class="tok-n">7L</span>))
-<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@lib.RowValue::String(</span><span class="tok-s">"ada"</span>))
-<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@lib.RowValue::Null)
+<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@moonfory.Row::new(schema)</span>
+<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@moonfory.RowValue::Int64(</span><span class="tok-n">7L</span>))
+<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@moonfory.RowValue::String(</span><span class="tok-s">"ada"</span>))
+<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@moonfory.RowValue::Null)
 
-<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@lib.RowCursor::new(row.finish()[:], schema)</span>
+<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowCursor::new(row.finish()[:], schema)</span>
 <span class="tok-n">println(cur.get_field(</span><span class="tok-n">1</span>))  <span class="tok-c">// String("ada")</span>
 <span class="tok-n">println(cur.is_null(</span><span class="tok-n">2</span>))   <span class="tok-c">// true</span></pre>
       </div>
@@ -120,11 +120,11 @@
       </p>
       <div class="code">
         <button class="copy" data-copy>copy</button>
-        <pre><span class="tok-k">let</span> once  <span class="tok-n">=</span> <span class="tok-n">@lib.shared(</span><span class="tok-n">7</span>, <span class="tok-s">"same"</span>)
+        <pre><span class="tok-k">let</span> once  <span class="tok-n">=</span> <span class="tok-n">@moonfory.shared(</span><span class="tok-n">7</span>, <span class="tok-s">"same"</span>)
 <span class="tok-k">let</span> twice <span class="tok-n">=</span> [once, once]
-<span class="tok-k">let</span> bytes <span class="tok-n">=</span> <span class="tok-n">@lib.dumps(twice, track_ref=true)</span>
-<span class="tok-k">let</span> back <span class="tok-n">:</span> <span class="tok-n">Array[@lib.Shared[String]]</span> <span class="tok-n">=</span>
-  <span class="tok-n">@lib.loads(bytes, track_ref=true)</span>
+<span class="tok-k">let</span> bytes <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(twice, track_ref=true)</span>
+<span class="tok-k">let</span> back <span class="tok-n">:</span> <span class="tok-n">Array[@moonfory.Shared[String]]</span> <span class="tok-n">=</span>
+  <span class="tok-n">@moonfory.loads(bytes, track_ref=true)</span>
 <span class="tok-n">println(back[</span><span class="tok-n">0</span>].value <span class="tok-n">==</span> back[<span class="tok-n">1</span>].value)  <span class="tok-c">// true</span></pre>
       </div>
 
@@ -136,7 +136,7 @@
       <div class="code">
         <button class="copy" data-copy>copy</button>
         <pre><span class="tok-k">let</span> outcome <span class="tok-n">=</span> <span class="tok-k">try</span> {
-  <span class="tok-k">let</span> _ <span class="tok-n">:</span> <span class="tok-n">@lib.Value</span> <span class="tok-n">=</span> <span class="tok-n">@lib.loads(@lib.unhex(</span><span class="tok-s">"01ff040100"</span>))
+  <span class="tok-k">let</span> _ <span class="tok-n">:</span> <span class="tok-n">@moonfory.Value</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.loads(@moonfory.unhex(</span><span class="tok-s">"01ff040100"</span>))
   <span class="tok-s">"read"</span>
 } <span class="tok-k">catch</span> {
   failure <span class="tok-n">=></span> failure<span class="tok-n">.to_string()</span>
