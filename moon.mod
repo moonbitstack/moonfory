@@ -10,7 +10,7 @@ license = "Apache-2.0"
 
 keywords = [ "serialization", "fory", "moonbit" ]
 
-description = "Apache Fory serialization for MoonBit."
+description = "The Fory cross-language binary format for MoonBit."
 
 import {
   "moonbitstack/moonvar@0.2.0",
