@@ -66,6 +66,8 @@ pub extend RowField with Debug::{to_repr}
 ///|
 /// A row schema: the ordered list of fields a row is built and read against.
 pub(all) struct RowSchema {
+  /// The fields, in the order the row stores them. Field `i` is the one at
+  /// slot `i`, so this order is the layout and not a display choice.
   fields : Array[RowField]
 }
 
@@ -726,7 +728,10 @@ fn read_variable(
 /// A builder for one row. Create it from a schema, set each field in any order, then
 /// call `finish` to get the row's bytes.
 pub(all) struct Row {
+  /// The schema this row is being built against.
   schema : RowSchema
+  /// One entry per field, in schema order. `None` is a field never set, which
+  /// is what `finish` writes as null.
   values : Array[RowValue?]
 }
 
@@ -760,10 +765,18 @@ pub fn Row::finish(self : Row) -> Bytes raise {
 /// `finish` produced. `base` is normally zero; it is non-zero only when this cursor
 /// reads a nested struct inside a larger row.
 pub struct RowCursor {
+  /// The bytes being read.
   view : BytesView
+  /// The schema the row was written with, so that a field can be found without
+  /// reading the ones in front of it.
   schema : RowSchema
+  /// How many bytes of null bitmap the row begins with: the field count rounded
+  /// up to eight bytes.
   bitmap_size : Int32
+  /// The width of one field's slot, eight bytes in this variant.
   fixed : Int32
+  /// Where this row starts inside the buffer. Normally zero; non-zero only when
+  /// a cursor reads a struct nested inside a larger row.
   base : Int32
 }
 
