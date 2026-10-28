@@ -36,6 +36,13 @@ The tests need one more, `moonbitstack/moonbase/base16`, because a fixture is
 read and written as hex and hex is not this package's business: it does not
 export `hex` or `unhex`.
 
+## Documentation
+
+- [The site](https://moonbitstack.github.io/moonfory/) — the guide, the
+  annotated byte examples and the reference.
+- [API reference](https://moonbitstack.github.io/moonfory/api/) — one page per
+  public item, generated from the interface and the doc comments below.
+
 ## Two entry points, four verbs
 
 Every value goes in and comes out through `dumps` and `loads`. The `dump`/`load`
@@ -352,6 +359,21 @@ Three things the fixtures found, and this package now does: a nested struct goes
 out as its fingerprint and its fields with no type ID in front, a list whose
 element type the schema declares goes out without the type in its header, and a
 dense array goes out as a byte count and raw elements rather than as a list.
+
+## The API reference is generated
+
+`docs/api/` is written by `scripts/api.py`, not by hand: it reads
+`src/pkg.generated.mbti` for the surface exactly as `moon info` prints it, and
+the `///` comments in `src/*.mbt` for the prose, which is why a sentence about a
+function lives beside the function. One page per public item, a source link on
+each, and a page for the directory itself.
+
+```sh
+python3 scripts/api.py     # after changing an interface or a doc comment
+```
+
+CI runs the same command and fails if the result differs from what is committed,
+so a page cannot outlive the function it describes.
 
 ## Specifications
 

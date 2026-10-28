@@ -765,6 +765,209 @@ td:first-child {
   color: #123330;
 }
 
+/* ---------- API reference ----------
+   A generated page is read like a dictionary entry: a name, the line it was
+   declared on, the declaration, then the prose. Everything is a rule away
+   from the next thing — no cards, no boxes, because a box would say "this
+   item ends here" and an entry is only a paragraph of the index. */
+
+.api-meta {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: -10px 0 22px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.api-group {
+  margin: 40px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.api-table td p {
+  margin: 0 0 0.55em;
+}
+
+.api-table td p:last-child {
+  margin-bottom: 0;
+}
+
+.api-table td:first-child code {
+  white-space: nowrap;
+}
+
+/* The kind of a thing, small enough to be a margin note beside its name. */
+.api-kind {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+/* An enumeration with nothing to say about each variant: the names are the
+   entry, set like the chips elsewhere on the site rather than in a table
+   with an empty second column. */
+.api-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 26px;
+}
+
+.api-variants code {
+  background: var(--code-bg);
+  border: 1px solid var(--rule-soft);
+  padding: 1px 6px;
+  color: var(--code-ink);
+  font-size: 12px;
+}
+
+/* A declaration that wraps instead of scrolling: the arguments are the entry,
+   and the tail of a signature should not be behind a scrollbar. The right
+   padding keeps the wrapped lines clear of the copy button. */
+.code.wrap {
+  padding-right: 62px;
+}
+
+.code.wrap pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A method's signature: quieter than a code block, and wrapped rather than
+   scrolled, because a parameter list is read left to right. */
+.sig {
+  border-left: 2px solid var(--rule);
+  padding: 1px 0 1px 14px;
+  margin: 0 0 12px;
+}
+
+.sig pre {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--code-ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.api-method {
+  padding-bottom: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.api-method:last-child {
+  border-bottom: 0;
+  margin-bottom: 8px;
+}
+
+.api-method h4 {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.api-method h4 a {
+  color: var(--ink);
+}
+
+/* The anchor, shown as a margin mark: a link that does not pretend to be
+   part of the name. */
+.api-method h4 a::before {
+  content: "#";
+  color: var(--slide);
+  margin-right: 7px;
+}
+
+.api-method h4 a:hover {
+  color: var(--oxide);
+  text-decoration: none;
+}
+
+.api-method h4 a:hover::before {
+  color: var(--oxide);
+}
+
+.api-method p {
+  margin: 0 0 10px;
+}
+
+/* How much of a long declaration was left out, under the excerpt. */
+.api-more {
+  margin: -4px 0 20px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.api-impls {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.api-impls code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--ink-soft);
+}
+
+.api-src {
+  margin: 30px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pager {
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin: 26px 0 0;
+  font-size: 14px;
+}
+
+.pager a {
+  display: block;
+  max-width: 48%;
+}
+
+.pager a span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pager .next {
+  margin-left: auto;
+  text-align: right;
+}
+
+.rail a[aria-current="page"] {
+  color: var(--oxide);
+}
+
+/* A page that is its own contents page needs no rail beside it. */
+.docs--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 hr.rule {
   border: 0;
   border-top: 1px solid var(--rule);
@@ -864,6 +1067,43 @@ footer a {
   td code,
   th code {
     overflow-wrap: anywhere;
+  }
+  /* A field's type is `Map[Int32, Int32]`, which does not fit a narrow
+     column; the nowrap that keeps a table tidy on a desktop is what makes
+     it overflow here. */
+  .api-table td:first-child code {
+    white-space: normal;
+  }
+  /* Equal thirds would leave the summary three words wide while the name
+     column sits half empty. Auto layout lets the prose take what is left. */
+  .api-table {
+    table-layout: auto;
+  }
+  .api-table th:first-child,
+  .api-table td:first-child {
+    width: 34%;
+  }
+  .api-table th:nth-child(2),
+  .api-table td:nth-child(2) {
+    width: 1%;
+  }
+  /* Five links and a wordmark are more than a phone's width. Wrapping is
+     invisible on a desktop, where they already fit on one line. */
+  .top {
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+  .nav {
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 13px;
+  }
+  .wordmark {
+    font-size: 22px;
+  }
+  .wordmark small {
+    font-size: 10px;
+    letter-spacing: 0.12em;
   }
 }
 

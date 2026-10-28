@@ -24,6 +24,7 @@
         <a href="index.html">Home</a>
         <a href="docs.html" aria-current="page">Docs</a>
         <a href="examples.html">Examples</a>
+        <a href="api/index.html">API</a>
         <a href="https://github.com/moonbitstack/moonfory">GitHub</a>
       </nav>
     </header>
@@ -47,6 +48,7 @@
         <a href="#row">Rows</a>
         <a href="#time">Time</a>
         <div class="grp">Reference</div>
+        <a href="api/index.html">API, one page per item</a>
         <a href="#errors">Errors</a>
         <a href="#not-here">Not here</a>
       </aside>
@@ -379,6 +381,16 @@ moon fmt</pre>
           borrows a second rather than carrying a negative nanosecond field.
         </p>
 
+        <h2 id="api">The reference</h2>
+        <p>
+          Every public item has a page of its own:
+          <a href="api/index.html">the API reference</a>. The signature on each
+          one is the one <code>moon info</code> prints, and the prose is the
+          comment beside the declaration, so a page cannot describe something the
+          package no longer does. CI regenerates the directory and refuses a
+          diff; <code>python3 scripts/api.py</code> is the whole of it.
+        </p>
+
         <h2 id="errors">Errors</h2>
         <table>
           <tr><th>Variant</th><th>When</th></tr>
@@ -425,6 +437,7 @@ moon fmt</pre>
         <span>
           <a href="docs.html">Docs</a> ·
           <a href="examples.html">Examples</a> ·
+          <a href="api/index.html">API</a> ·
           <a href="https://github.com/moonbitstack/moonfory">Source</a>
         </span>
       </div>
