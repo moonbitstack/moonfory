@@ -130,10 +130,6 @@ class Item:
     def label(self) -> str:
         return KIND_LABEL[self.kind]
 
-    @property
-    def anchor(self) -> str:
-        return self.name
-
 
 # --------------------------------------------------------------------------
 # the interface: src/pkg.generated.mbti
@@ -478,6 +474,17 @@ def esc(text: str) -> str:
     return html.escape(text, quote=False)
 
 
+def attr(text: str) -> str:
+    """For a value inside a quoted attribute: a `"` in a doc comment would
+    otherwise end the `content=` early and take the rest of the tag with it.
+
+    Only the double quote is escaped. `html.escape` would also turn every
+    possessive apostrophe into `&#x27;` — correct, and unreadable in a file
+    that anyone might open to see what a page says.
+    """
+    return html.escape(text, quote=True).replace("&#x27;", "'")
+
+
 def inline(text: str) -> str:
     out = esc(text)
     out = re.sub(r"`([^`]+)`", lambda m: "<code>%s</code>" % m.group(1), out)
@@ -632,7 +639,7 @@ def shell(title: str, description: str, root: str, body: str) -> str:
 """ % {
         "mark": MARK,
         "title": esc(title),
-        "desc": esc(description),
+        "desc": attr(description),
         "root": root,
         "favicon": FAVICON,
         "nav": nav(root, "API"),
@@ -640,33 +647,26 @@ def shell(title: str, description: str, root: str, body: str) -> str:
     }
 
 
-def rail_links(
-    items: list[Item], current: Item | None, category: str | None
-) -> str:
-    """The rail: one category's items, then the way back to the index."""
-    out = []
-    if category is None:
-        for cat in CATEGORY_ORDER:
-            group = [i for i in items if i.category == cat]
-            if not group:
-                continue
-            out.append('<div class="grp">%s</div>' % esc(cat))
-            for item in group:
-                out.append(_rail_a(item, current, ""))
-    else:
-        out.append('<div class="grp">%s</div>' % esc(category))
-        for item in items:
-            if item.category == category:
-                out.append(_rail_a(item, current, ""))
+def rail_links(items: list[Item], current: Item, category: str) -> str:
+    """The rail: the current item's category, then the way back to the index.
+
+    Only the category, not all forty-two: an entry page should not open with
+    the whole contents list beside it, and the item is one of a handful that
+    a reader is likely to move between.
+    """
+    out = ['<div class="grp">%s</div>' % esc(category)]
+    for item in items:
+        if item.category == category:
+            out.append(_rail_a(item, current))
     out.append('<div class="grp">All items</div>')
     out.append('<a href="index.html">API index</a>')
     return "\n        ".join(out)
 
 
-def _rail_a(item: Item, current: Item | None, prefix: str) -> str:
-    if current is not None and item is current:
+def _rail_a(item: Item, current: Item) -> str:
+    if item is current:
         return '<a href="%s" aria-current="page">%s</a>' % (item.url, esc(item.name))
-    return '<a href="%s%s">%s</a>' % (prefix, item.url, esc(item.name))
+    return '<a href="%s">%s</a>' % (item.url, esc(item.name))
 
 
 def source_link(item: Item, prefix: str = "") -> str:
