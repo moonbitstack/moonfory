@@ -22,9 +22,9 @@ fn main {
     text = text + args[i]
   }
   try {
-    let bytes = @moonfory.unhex(text)
+    let bytes = @base16.decode(text)
     let value : @moonfory.Value = @moonfory.loads(bytes)
-    println(@moonfory.hex(bytes))
+    println(@base16.encode(bytes))
     println(value.to_string())
   } catch {
     failure => {

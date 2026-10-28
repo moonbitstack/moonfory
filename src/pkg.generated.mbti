@@ -6,6 +6,7 @@ import {
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
   "moonbitstack/moondate",
+  "moonbitstack/moonmodel",
 }
 
 // Values
@@ -20,8 +21,6 @@ pub fn days_of_date(@moondate.Date) -> Int64
 pub fn[T : Codec] dump(T, @buffer.Buffer, config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> Unit raise
 
 pub fn[T : Codec] dumps(T, config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -> Bytes raise
-
-pub fn hex(Bytes) -> String
 
 pub fn[T : Codec] load(Reader) -> T raise
 
@@ -46,8 +45,6 @@ pub let root_key : Int32
 pub fn[T] shared(Int32, T) -> Shared[T]
 
 pub fn span_of_parts(Int64, Int32) -> @moondate.Span
-
-pub fn unhex(String) -> Bytes raise
 
 pub fn write_body(Writer, Value) -> Unit raise
 
@@ -100,16 +97,21 @@ pub(all) struct Config {
 pub fn Config::new(xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32) -> Self
 
 pub(all) struct FieldMeta {
-  name : String
-  tag : Int32?
+  desc : @moonmodel.Field
   ty : TypeId
-  nullable : Bool
+  tag : Int32?
   track_ref : Bool
+  child : StructMeta?
+  element : TypeId?
 } derive(Eq, @debug.Debug)
 pub fn FieldMeta::equal(Self, Self) -> Bool
+pub fn FieldMeta::from(@moonmodel.Field, tag? : Int32?, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -> Self raise
 pub fn FieldMeta::identifier(Self) -> String
-pub fn FieldMeta::new(String, TypeId, tag? : Int32?, nullable? : Bool, track_ref? : Bool) -> Self
+pub fn FieldMeta::kind(Self) -> @moonmodel.Type
+pub fn FieldMeta::name(Self) -> String
+pub fn FieldMeta::new(String, TypeId, tag? : Int32?, nullable? : Bool, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -> Self
 pub fn FieldMeta::not_equal(Self, Self) -> Bool
+pub fn FieldMeta::nullable(Self) -> Bool
 pub fn FieldMeta::output(Self, &Logger) -> Unit
 pub fn FieldMeta::to_repr(Self) -> @debug.Repr
 pub fn FieldMeta::to_string(Self) -> String
@@ -274,20 +276,26 @@ pub fn[T : Codec] Shared::ty(Self[T]) -> TypeId
 pub fn[T : Codec] Shared::write_data(Self[T], Writer) -> Unit raise
 pub impl[T : Codec] Codec for Shared[T]
 
-pub(all) struct StructMeta {
-  name : String
-  user : Int32
-  fields : Array[FieldMeta]
+pub struct StructMeta {
+  model_ : @moonmodel.Model
+  id_ : Int32
+  wire_ : Array[(TypeId, Int32?, Bool, StructMeta?, TypeId?)]
 } derive(Eq, @debug.Debug)
 pub fn StructMeta::equal(Self, Self) -> Bool
+pub fn StructMeta::fields(Self) -> Array[FieldMeta]
 pub fn StructMeta::find(Self, String) -> FieldMeta?
+pub fn StructMeta::hash(Self) -> Int32
+pub fn StructMeta::model(Self) -> @moonmodel.Model
+pub fn StructMeta::name(Self) -> String
 pub fn StructMeta::new(String, Int32, Array[FieldMeta]) -> Self
 pub fn StructMeta::not_equal(Self, Self) -> Bool
+pub fn StructMeta::of(@moonmodel.Model, user~ : Int32, tags? : Map[String, Int32], refs? : Array[String], children? : Array[Self]) -> Self raise
 pub fn StructMeta::order(Self) -> Array[Int32]
 pub fn StructMeta::ordered(Self) -> Array[FieldMeta]
 pub fn StructMeta::output(Self, &Logger) -> Unit
 pub fn StructMeta::to_repr(Self) -> @debug.Repr
 pub fn StructMeta::to_string(Self) -> String
+pub fn StructMeta::user(Self) -> Int32
 pub impl Show for StructMeta
 
 pub(all) enum TypeId {
@@ -360,8 +368,10 @@ pub fn TypeId::is_dense(Self) -> Bool
 pub fn TypeId::is_named_by_id(Self) -> Bool
 pub fn TypeId::is_primitive(Self) -> Bool
 pub fn TypeId::is_user(Self) -> Bool
+pub fn TypeId::kind(Self) -> @moonmodel.Type
 pub fn TypeId::not_equal(Self, Self) -> Bool
 pub fn TypeId::of(Int32) -> Self?
+pub fn TypeId::of_kind(@moonmodel.Type) -> Self raise
 pub fn TypeId::output(Self, &Logger) -> Unit
 pub fn TypeId::to_repr(Self) -> @debug.Repr
 pub fn TypeId::to_string(Self) -> String
@@ -383,6 +393,8 @@ pub(all) enum Value {
   Date(Int64)
   Duration(Int64, Int32)
   Decimal(Int32, @bigint.BigInt)
+  Shared(Int32, Value)
+  Pointer(Int32)
 } derive(Eq, @debug.Debug)
 pub fn Value::equal(Self, Self) -> Bool
 pub fn Value::not_equal(Self, Self) -> Bool
@@ -408,6 +420,7 @@ pub(all) struct Writer {
   config : Config
   refs : Map[Int32, Int32]
   mut next_ref : Int32
+  mut fresh : Int32
 }
 pub fn Writer::buffer(Self) -> @buffer.Buffer
 pub fn Writer::bytes(Self) -> Bytes
@@ -419,12 +432,14 @@ pub fn Writer::write_byte(Self, Int32) -> Unit
 pub fn Writer::write_bytes(Self, Bytes) -> Unit
 pub fn Writer::write_f32(Self, Float) -> Unit
 pub fn Writer::write_f64(Self, Double) -> Unit
+pub fn Writer::write_fresh(Self) -> Unit
 pub fn Writer::write_head(Self) -> Unit
 pub fn Writer::write_i16(Self, Int32) -> Unit
 pub fn Writer::write_i32(Self, Int32) -> Unit
 pub fn Writer::write_i64(Self, Int64) -> Unit
 pub fn Writer::write_i8(Self, Int32) -> Unit
 pub fn Writer::write_null_flag(Self, Bool) -> Unit
+pub fn Writer::write_ref(Self, Int32) -> Bool
 pub fn Writer::write_string(Self, String) -> Unit
 pub fn Writer::write_tagged_i64(Self, Int64) -> Unit
 pub fn Writer::write_tagged_u64(Self, UInt64) -> Unit

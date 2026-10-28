@@ -7,7 +7,7 @@
 /// same road in the other direction: bytes this package wrote, which `pyfory`
 /// reads.
 fn read(text : String) -> String raise {
-  let value : @moonfory.Value = @moonfory.loads(@moonfory.unhex(text))
+  let value : @moonfory.Value = @moonfory.loads(@base16.decode(text))
   value.to_string()
 }
 
@@ -60,7 +60,7 @@ test "what this package writes, read by another language" {
     (@moonfory.dumps(@moonfory.Value::Int(1L)), "01ff060100000000000000"),
     (@moonfory.dumps(@moonfory.Value::Str("ab")), "01ff150a6162"),
     (
-      @moonfory.dumps(@moonfory.Value::Binary(@moonfory.unhex("6162"))),
+      @moonfory.dumps(@moonfory.Value::Binary(@base16.decode("6162"))),
       "01ff29026162",
     ),
     (@moonfory.dumps(@moonfory.Value::Bool(true)), "01ff0101"),
@@ -72,6 +72,6 @@ test "what this package writes, read by another language" {
     (@moonfory.dumps(@moonfory.Value::Null), "01fd"),
   ]
   for (wrote, text) in bytes {
-    inspect(@moonfory.hex(wrote), content=text)
+    inspect(@base16.encode(wrote), content=text)
   }
 }

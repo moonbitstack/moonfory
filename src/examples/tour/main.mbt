@@ -22,7 +22,7 @@ fn main raise {
   show("Map {\"a\": 1}", { "a": 1 })
   let empty : Array[Int32] = []
   show("empty Array", empty)
-  show("nothing at all", @moonfory.Value::Null)
+  show_value("nothing at all", @moonfory.Value::Null)
 
   section("a struct, written down once")
   let point = @moonfory.StructMeta::new("Point", 1, [
@@ -33,7 +33,7 @@ fn main raise {
     ("x", @moonfory.Value::Int(1L)),
     ("y", @moonfory.Value::Int(2L)),
   ])
-  show("Point(1, 2)", written, schemas=[point])
+  show_value("Point(1, 2)", written, schemas=[point])
 
   section("a value that is written more than once")
   let twice = [@moonfory.shared(7, "once"), @moonfory.shared(7, "once")]
@@ -44,7 +44,7 @@ fn main raise {
       track_ref=true,
     )
     let values = back.map(fn(one) { one.value })
-    println("  " + pad(@moonfory.hex(tracked), 40) + "  " + join(values))
+    println("  " + pad(@base16.encode(tracked), 40) + "  " + join(values))
   } catch {
     failure => println("  refused  " + failure.to_string())
   } noraise {
@@ -68,7 +68,7 @@ fn main raise {
       "  " +
       pad("id, name, age", 18) +
       "  " +
-      pad(@moonfory.hex(row_bytes), 40) +
+      pad(@base16.encode(row_bytes), 40) +
       "  " +
       "\{@debug.Debug::to_repr(cur.get_field(1))}",
     )
@@ -121,7 +121,7 @@ fn[T : @moonfory.Codec + Debug] show(
       "  " +
       pad(label, 18) +
       "  " +
-      pad(@moonfory.hex(bytes), 40) +
+      pad(@base16.encode(bytes), 40) +
       "  " +
       "\{@debug.Debug::to_repr(back)}",
     )
@@ -134,9 +134,37 @@ fn[T : @moonfory.Codec + Debug] show(
 }
 
 ///|
+/// The same, for a `Value`: printed with its own `Show`, which says
+/// `Struct(100, [x: Int(1)])` rather than the whole schema the derived `Debug`
+/// would print, and is what a reader of this tour wants to see.
+fn show_value(
+  label : String,
+  value : @moonfory.Value,
+  schemas~ : Array[@moonfory.StructMeta] = [],
+) -> Unit {
+  try {
+    let bytes = @moonfory.dumps(value)
+    let back : @moonfory.Value = @moonfory.loads(bytes, schemas~)
+    println(
+      "  " +
+      pad(label, 18) +
+      "  " +
+      pad(@base16.encode(bytes), 40) +
+      "  " +
+      back.to_string(),
+    )
+  } catch {
+    failure =>
+      println("  " + pad(label, 18) + "  refused  " + failure.to_string())
+  } noraise {
+    _ => ()
+  }
+}
+
+///|
 fn read(text : String) -> String {
   try {
-    let value : @moonfory.Value = @moonfory.loads(@moonfory.unhex(text))
+    let value : @moonfory.Value = @moonfory.loads(@base16.decode(text))
     value.to_string()
   } catch {
     failure => "refused  " + failure.to_string()

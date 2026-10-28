@@ -7,7 +7,7 @@
 fn wrote(f : (@moonfory.Writer) -> Unit) -> String {
   let w = @moonfory.Writer::new()
   f(w)
-  @moonfory.hex(w.bytes())
+  @base16.encode(w.bytes())
 }
 
 ///|
@@ -24,10 +24,10 @@ fn repeated(c : Char, n : Int32) -> String {
 test "the header byte carries the cross-language flag" {
   let xlang = @moonfory.Writer::new()
   xlang.write_head()
-  inspect(@moonfory.hex(xlang.bytes()), content="01")
+  inspect(@base16.encode(xlang.bytes()), content="01")
   let native = @moonfory.Writer::new(config=@moonfory.Config::new(xlang=false))
   native.write_head()
-  inspect(@moonfory.hex(native.bytes()), content="00")
+  inspect(@base16.encode(native.bytes()), content="00")
 }
 
 ///|
@@ -121,9 +121,9 @@ test "the string header is one byte while it fits in seven bits" {
 
 ///|
 test "binary is a length and then the bytes" {
-  let two = @moonfory.unhex("6162")
+  let two = @base16.decode("6162")
   inspect(wrote(fn(w) { w.write_binary(two) }), content="026162")
-  let none = @moonfory.unhex("")
+  let none = @base16.decode("")
   inspect(wrote(fn(w) { w.write_binary(none) }), content="00")
 }
 

@@ -72,7 +72,7 @@ pub fn Reader::new(
 ) -> Reader {
   let by_user : Map[Int32, StructMeta] = Map([])
   for meta in schemas {
-    by_user.set(meta.user, meta)
+    by_user.set(meta.user(), meta)
   }
   {
     view: bytes[:],

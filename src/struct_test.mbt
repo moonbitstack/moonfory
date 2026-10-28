@@ -11,7 +11,7 @@ fn order(fields : Array[@moonfory.FieldMeta]) -> String {
     if !first {
       out.write_char(',')
     }
-    out.write_string(f.name)
+    out.write_string(f.name())
     first = false
   }
   out.to_string()

@@ -3,4 +3,5 @@ pkgtype(kind: "executable")
 import {
   "moonbitlang/core/env",
   "moonbitstack/moonfory",
+  "moonbitstack/moonbase/base16",
 }

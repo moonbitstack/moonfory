@@ -42,6 +42,19 @@ pub(all) enum Value {
   Duration(Int64, Int32)
   /// A decimal: the scale, and the unscaled value.
   Decimal(Int32, BigInt)
+  /// A value that may be pointed at, and the key it is remembered under.
+  ///
+  /// Identity is the caller's, because a MoonBit value carries none: two values
+  /// filed under the same key are one value on the wire, and the second of them
+  /// is written as a `Pointer`.
+  Shared(Int32, Value)
+  /// A reference to a value already written under a key.
+  ///
+  /// A cycle read back looks like this: the value it starts at is a `Shared`,
+  /// and the field that leads back to it is a `Pointer` to the same key. That is
+  /// a value a reader can hold without it holding itself, and a writer can send
+  /// again byte for byte.
+  Pointer(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -59,7 +72,7 @@ pub impl Show for Value with fn output(self, logger) {
     UInt(u) => logger.write_string("UInt(\{u})")
     Float(d) => logger.write_string("Float(\{d})")
     Str(s) => logger.write_string("Str(\"" + s + "\")")
-    Binary(b) => logger.write_string("Binary(" + hex(b) + ")")
+    Binary(b) => logger.write_string("Binary(" + hexadecimal(b) + ")")
     List(kind, items) => {
       logger.write_string("List(" + kind.to_string() + ", [")
       for i in 0..<items.length() {
@@ -82,7 +95,7 @@ pub impl Show for Value with fn output(self, logger) {
       logger.write_string("])")
     }
     Struct(meta, fields) => {
-      logger.write_string("Struct(\{meta.user}, [")
+      logger.write_string("Struct(\{meta.user()}, [")
       for i in 0..<fields.length() {
         let (name, v) = fields[i]
         if i > 0 {
@@ -100,11 +113,29 @@ pub impl Show for Value with fn output(self, logger) {
       logger.write_string("Duration(\{seconds}, \{nanos})")
     Decimal(scale, unscaled) =>
       logger.write_string("Decimal(\{scale}, \{unscaled})")
+    Shared(key, v) =>
+      logger.write_string("Shared(\{key}, " + v.to_string() + ")")
+    Pointer(key) => logger.write_string("Pointer(\{key})")
   }
 }
 
 ///|
 pub extend Value with Debug::{to_repr}
+
+///|
+/// Bytes as hexadecimal, lower case: how a `Binary` reads in `to_string`, where
+/// the alternative — a string that happens to hold bytes that are not text — is
+/// the one thing a printed value must not look like.
+fn hexadecimal(bytes : Bytes) -> String {
+  let digits = "0123456789abcdef".to_array()
+  let out = StringBuilder()
+  for i in 0..<bytes.length() {
+    let v = bytes[i].to_int()
+    out.write_char(digits[(v >> 4) & 0x0f])
+    out.write_char(digits[v & 0x0f])
+  }
+  out.to_string()
+}
 
 ///|
 pub extend Value with Show::{to_string, output}
@@ -131,6 +162,22 @@ pub fn Value::ty(self : Value) -> TypeId {
     Date(_) => Date
     Duration(_, _) => Duration
     Decimal(_, _) => Decimal
+    Shared(_, inner) => inner.ty()
+    Pointer(_) => Unknown
+  }
+}
+
+///|
+/// The name a writer files a reference id under.
+///
+/// A reader numbers references from zero and gives the root the first one; a
+/// writer files the root under `root_key`, which is below every caller's key.
+/// The two spaces meet here, in the one place that has to know both.
+fn ref_key(id : Int32) -> Int32 {
+  if id == 0 {
+    root_key
+  } else {
+    id
   }
 }
 
@@ -146,7 +193,7 @@ pub fn write_value(w : Writer, v : Value) -> Unit raise {
 /// that carry one, then the body.
 pub fn write_value_data(w : Writer, v : Value) -> Unit raise {
   match v {
-    Struct(meta, _) => w.write_var_u32(meta.user.reinterpret_as_uint())
+    Struct(meta, _) => w.write_var_u32(meta.user().reinterpret_as_uint())
     Enum(user, _) => w.write_var_u32(user.reinterpret_as_uint())
     _ => ()
   }
@@ -172,7 +219,12 @@ pub fn write_body(w : Writer, v : Value) -> Unit raise {
     Float(d) => w.write_f64(d)
     Str(s) => w.write_string(s)
     Binary(b) => w.write_binary(b)
-    List(_, items) => write_list_body(w, items)
+    List(kind, items) =>
+      if kind.is_dense() {
+        write_dense(w, kind, items)
+      } else {
+        write_list_body(w, items)
+      }
     Map(entries) => write_map_body(w, entries)
     Struct(meta, fields) => write_struct_body(w, meta, fields)
     Enum(_, ordinal) => w.write_var_u32(ordinal.reinterpret_as_uint())
@@ -186,6 +238,14 @@ pub fn write_body(w : Writer, v : Value) -> Unit raise {
       w.write_i32(nanos)
     }
     Decimal(scale, unscaled) => write_decimal(w, scale, unscaled)
+    // A shared value is written as the value it holds: the flag that says it may
+    // be pointed at belongs to the place it is written in, not to the value.
+    Shared(_, inner) => write_body(w, inner)
+    // A pointer is a reference, and a reference is only ever written where a
+    // flag goes before a value. Reaching here means the schema did not give the
+    // field the flag that would have carried it.
+    Pointer(key) =>
+      raise Refused::Unsupported(kind="pointer \{key} outside a slot")
   }
 }
 
@@ -312,7 +372,21 @@ fn read_struct_body(r : Reader) -> Value raise {
     Some(m) => m
     None => raise Refused::Unsupported(kind="struct \{user}")
   }
+  skip_hash(r)
   Struct(meta, read_struct_fields(r, meta))
+}
+
+///|
+/// Step over the fingerprint a writer puts between the user type ID and the
+/// fields.
+///
+/// The schema registry is this side's agreement, so the number is read and not
+/// argued with: a peer whose schema disagrees computes a different fingerprint
+/// and refuses the message on its own side of the wire, which is where the
+/// disagreement can still be named. `StructMeta::hash` is here for a caller who
+/// wants to check it themselves.
+fn skip_hash(r : Reader) -> Unit raise {
+  let _ = r.read_i32()
 }
 
 ///|
@@ -397,6 +471,7 @@ fn read_list_into(
   r : Reader,
   kind : TypeId,
   items : Array[Value],
+  declared~ : TypeId? = None,
 ) -> Value raise {
   let n = r.read_var_u32().reinterpret_as_int()
   r.spend(n)
@@ -408,11 +483,18 @@ fn read_list_into(
   let header = r.read_byte()
   let has_null = (header & 0x02) != 0
   let same = (header & 0x08) != 0
-  let declared = (header & 0x04) != 0
-  if declared {
-    raise Refused::Unsupported(kind="list of a declared type")
+  let element : TypeId? = if (header & 0x04) != 0 {
+    // The element type is not on the wire because the schema declares it, and a
+    // schema that does not is one this list cannot be read under.
+    match declared {
+      Some(ty) => Some(ty)
+      None => raise Refused::Unsupported(kind="list of an undeclared type")
+    }
+  } else if same {
+    Some(r.read_type_id())
+  } else {
+    None
   }
-  let element : TypeId? = if same { Some(r.read_type_id()) } else { None }
   for _ in 0..<n {
     if has_null {
       let flag = r.read_i8()
@@ -584,20 +666,76 @@ fn write_struct_body(
   meta : StructMeta,
   fields : Array[(String, Value)],
 ) -> Unit raise {
+  // The fingerprint of the schema, which a peer checks against its own before it
+  // trusts a single field: it is written once, after the user type ID and before
+  // the values.
+  w.write_i32(meta.hash())
+  write_struct_body_of(w, meta, fields)
+}
+
+///|
+/// The body of a struct whose fingerprint is already on the wire: the fields, in
+/// Fory order.
+fn write_struct_body_of(
+  w : Writer,
+  meta : StructMeta,
+  fields : Array[(String, Value)],
+) -> Unit raise {
   for field in meta.ordered() {
-    let value = lookup(fields, field.name)
-    if field.nullable || field.track_ref {
-      if value is Null {
+    let given = lookup(fields, field.name())
+    let mut value = given
+    if field.track_ref {
+      // The flag that says the value may be pointed at, and the value it
+      // points at in place of it: a `Pointer` is the reference itself and has
+      // no body of its own.
+      match given {
+        Null => {
+          w.write_byte(0xFD)
+          continue
+        }
+        Pointer(key) => {
+          if !w.write_ref(ref_key(key)) {
+            raise Refused::BadRef(at=w.length(), got=key)
+          }
+          continue
+        }
+        Shared(key, inner) => {
+          if !w.write_tracked(ref_key(key)) {
+            continue
+          }
+          value = inner
+        }
+        // A value the caller did not name takes its place in the id order all
+        // the same, so that the references that are named keep their ids.
+        _ => w.write_fresh()
+      }
+    } else if field.nullable() {
+      if given is Null {
         w.write_byte(0xFD)
         continue
-      } else if field.track_ref {
-        w.write_byte(0x00)
-      } else {
-        w.write_byte(0xFF)
       }
+      w.write_byte(0xFF)
     }
-    if field.ty.is_user() {
-      w.write_type_id(field.ty)
+    match field.child {
+      // A field whose type is declared says what it is once, in the schema, so
+      // the wire carries no type ID and no user type ID: only the fingerprint
+      // that says which schema, and the fields.
+      Some(child) => {
+        let inner = match value {
+          Struct(_, fields) => fields
+          Shared(_, Struct(_, fields)) => fields
+          _ =>
+            raise Refused::WantType(
+              at=w.length(),
+              want=field.ty.code(),
+              got=value.ty().code(),
+            )
+        }
+        w.write_i32(child.hash())
+        write_struct_body_of(w, child, inner)
+        continue
+      }
+      None => if field.ty.is_user() { w.write_type_id(field.ty) }
     }
     write_body_as(w, field.ty, value)
   }
@@ -614,29 +752,57 @@ fn read_fields_into(
   meta : StructMeta,
   out : Array[(String, Value)],
 ) -> Array[(String, Value)] raise {
-  if meta.fields.length() > r.config.fields {
+  if meta.fields().length() > r.config.fields {
     raise Refused::TooLarge(
       at=r.offset(),
       limit=r.config.fields.to_int64(),
-      got=meta.fields.length().to_int64(),
+      got=meta.fields().length().to_int64(),
     )
   }
   r.enter()
   for field in meta.ordered() {
     let mut tracked : Int32? = None
-    if field.nullable || field.track_ref {
+    if field.nullable() || field.track_ref {
       match r.read_ref_flag() {
         Null => {
-          out.push((field.name, Null))
+          out.push((field.name(), Null))
           continue
         }
         Ref(id~) => {
-          out.push((field.name, resolve_ref(r, id)))
+          // A reference is kept as one when the field may be shared: the value
+          // it names is already on the wire, and writing the value again would
+          // be a different message from the one that arrived.
+          let value = if field.track_ref {
+            Pointer(id)
+          } else {
+            resolve_ref(r, id)
+          }
+          out.push((field.name(), value))
           continue
         }
         NotNull => ()
         RefValue(id~) => tracked = Some(id)
       }
+    }
+    match field.child {
+      Some(child) => {
+        // No type meta: the schema named the struct, and the bytes say which
+        // version of it by their fingerprint alone.
+        skip_hash(r)
+        let fields : Array[(String, Value)] = []
+        match tracked {
+          Some(id) => r.set_node(id, Struct(child, fields))
+          None => ()
+        }
+        let _ = read_fields_into(r, child, fields)
+        let value = match tracked {
+          Some(id) if field.track_ref => Shared(id, Struct(child, fields))
+          _ => Struct(child, fields)
+        }
+        out.push((field.name(), value))
+        continue
+      }
+      None => ()
     }
     if field.ty.is_user() {
       let (got, user) = r.read_user_type()
@@ -649,7 +815,7 @@ fn read_fields_into(
       }
       if got == Enum || got == NamedEnum {
         out.push(
-          (field.name, Enum(user, r.read_var_u32().reinterpret_as_int())),
+          (field.name(), Enum(user, r.read_var_u32().reinterpret_as_int())),
         )
         continue
       }
@@ -657,29 +823,49 @@ fn read_fields_into(
         Some(m) => m
         None => raise Refused::Unsupported(kind="struct \{user}")
       }
+      skip_hash(r)
       let fields : Array[(String, Value)] = []
       match tracked {
         Some(id) => r.set_node(id, Struct(child, fields))
         None => ()
       }
       let _ = read_fields_into(r, child, fields)
-      out.push((field.name, Struct(child, fields)))
+      // The id this struct was given is what a reference to it names, so it
+      // travels with the struct rather than being dropped here.
+      let value = match tracked {
+        Some(id) if field.track_ref => Shared(id, Struct(child, fields))
+        _ => Struct(child, fields)
+      }
+      out.push((field.name(), value))
       continue
     }
     let value = match tracked {
       Some(id) if field.ty == List || field.ty == Set => {
         let items : Array[Value] = []
         r.set_node(id, List(field.ty, items))
-        read_list_into(r, field.ty, items)
+        read_list_into(r, field.ty, items, declared=field.element)
       }
       Some(id) if field.ty == Map => {
         let entries : Array[(Value, Value)] = []
         r.set_node(id, Map(entries))
         read_map_into(r, entries)
       }
-      _ => read_body(r, field.ty)
+      _ =>
+        if field.ty == List || field.ty == Set {
+          // A list is read under the element type its schema declares, which is
+          // the type the writer may have left out of the header.
+          read_list_into(r, field.ty, [], declared=field.element)
+        } else {
+          read_body(r, field.ty)
+        }
     }
-    out.push((field.name, value))
+    // The id a tracked value was given is part of the value: it is what the
+    // references to it name, and what a writer sends again unchanged.
+    let value = match tracked {
+      Some(id) if field.track_ref => Shared(id, value)
+      _ => value
+    }
+    out.push((field.name(), value))
   }
   r.leave()
   out
@@ -709,6 +895,45 @@ fn lookup(fields : Array[(String, Value)], name : String) -> Value {
     }
   }
   Null
+}
+
+///|
+/// A dense primitive array: the byte count, then the elements as they lie in
+/// memory, little endian.
+///
+/// The count is bytes and not elements, which is what tells a reader how much to
+/// take without knowing the width; the width is the type's, and an element this
+/// package has no value for — the three floats narrower than a single — is
+/// refused rather than approximated.
+fn write_dense(w : Writer, ty : TypeId, items : Array[Value]) -> Unit raise {
+  let element = match ty.element() {
+    Some(t) => t
+    None => raise Refused::BadType(at=w.length(), got=ty.code())
+  }
+  let size = match element.fixed_size() {
+    Some(n) => n
+    None => raise Refused::BadType(at=w.length(), got=ty.code())
+  }
+  w.write_var_u32((items.length() * size).reinterpret_as_uint())
+  for item in items {
+    match (element, item) {
+      (Bool, Bool(b)) => w.write_bool(b)
+      (Int8, Int(i)) => w.write_i8(i.to_int())
+      (Int16, Int(i)) => w.write_i16(i.to_int())
+      (Int32, Int(i)) => w.write_i32(i.to_int())
+      (Int64, Int(i)) => w.write_i64(i)
+      (UInt8, UInt(u)) => w.write_u8(u.reinterpret_as_int64().to_int())
+      (UInt16, UInt(u)) => w.write_u16(u.reinterpret_as_int64().to_int())
+      (UInt32, UInt(u)) => w.write_u32(u.to_uint())
+      (UInt64, UInt(u)) => w.write_u64(u)
+      (Float32, Float(d)) => w.write_f32(Float::from_double(d))
+      (Float64, Float(d)) => w.write_f64(d)
+      (_, _) =>
+        raise Refused::Unsupported(
+          kind="dense element \{element} of \{item.ty()}",
+        )
+    }
+  }
 }
 
 ///|

@@ -26,8 +26,8 @@ test "every cross-language value comes back out of the bytes it went into" {
     @moonfory.Value::Str(""),
     @moonfory.Value::Str("ab"),
     @moonfory.Value::Str("世界"),
-    @moonfory.Value::Binary(@moonfory.unhex("")),
-    @moonfory.Value::Binary(@moonfory.unhex("6162")),
+    @moonfory.Value::Binary(@base16.decode("")),
+    @moonfory.Value::Binary(@base16.decode("6162")),
     @moonfory.Value::List(@moonfory.TypeId::List, []),
     @moonfory.Value::List(@moonfory.TypeId::Set, []),
     @moonfory.Value::List(@moonfory.TypeId::List, [
@@ -61,7 +61,7 @@ test "a decimal is written small when it fits, and as bytes when it does not" {
   let small = @moonfory.dumps(
     @moonfory.Value::Decimal(2, BigInt::from_int64(-12345L)),
   )
-  inspect(@moonfory.hex(small), content="01ff2804e28103")
+  inspect(@base16.encode(small), content="01ff2804e28103")
   let big = BigInt::from_int64(4_611_686_018_427_387_903L) *
     BigInt::from_int64(1000L)
   let wide = @moonfory.dumps(@moonfory.Value::Decimal(0, big))
@@ -72,13 +72,13 @@ test "a decimal is written small when it fits, and as bytes when it does not" {
 ///|
 test "a list with nothing in it writes no header, having nothing to say" {
   inspect(
-    @moonfory.hex(
+    @base16.encode(
       @moonfory.dumps(@moonfory.Value::List(@moonfory.TypeId::List, [])),
     ),
     content="01ff1600",
   )
   inspect(
-    @moonfory.hex(@moonfory.dumps(@moonfory.Value::Map([]))),
+    @base16.encode(@moonfory.dumps(@moonfory.Value::Map([]))),
     content="01ff1800",
   )
 }
@@ -91,7 +91,7 @@ test "a list with a nothing in it says so, one flag per element" {
       @moonfory.Value::Int(1L),
     ]),
   )
-  inspect(@moonfory.hex(bytes), content="01ff16020a06fdff0100000000000000")
+  inspect(@base16.encode(bytes), content="01ff16020a06fdff0100000000000000")
 }
 
 ///|
@@ -105,7 +105,7 @@ test "a struct is read by the schema its user type ID names" {
     ("y", @moonfory.Value::Int(2L)),
   ])
   let bytes = @moonfory.dumps(v)
-  inspect(@moonfory.hex(bytes), content="01ff1b010100000002000000")
+  inspect(@base16.encode(bytes), content="01ff1b0194d631870100000002000000")
   let back : @moonfory.Value = @moonfory.loads(bytes, schemas=[point])
   inspect(back == v, content="true")
 }
@@ -141,7 +141,7 @@ test "a field is written in the width its schema names, not its own" {
       ("wide", @moonfory.Value::Int(1L)),
     ]),
   )
-  inspect(@moonfory.hex(bytes), content="01ff1b02010000000000000001")
+  inspect(@base16.encode(bytes), content="01ff1b0247de60d5010000000000000001")
 }
 
 ///|
@@ -156,5 +156,5 @@ test "a nullable field carries a flag, and sorts after one that cannot be absent
       ("b", @moonfory.Value::Int(8L)),
     ]),
   )
-  inspect(@moonfory.hex(bytes), content="01ff1b0308000000ff07000000")
+  inspect(@base16.encode(bytes), content="01ff1b031db9061208000000ff07000000")
 }

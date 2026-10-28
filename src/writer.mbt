@@ -20,6 +20,11 @@ pub(all) struct Writer {
   refs : Map[Int32, Int32]
   /// The next reference id.
   mut next_ref : Int32
+  /// The key handed to the next value that takes a reference id without being
+  /// given one: a tracked value the caller did not name still has to occupy its
+  /// place in the id order, and the key it is filed under descends from `-2`,
+  /// below `root_key`.
+  mut fresh : Int32
 }
 
 ///|
@@ -28,7 +33,7 @@ pub fn Writer::new(
   config~ : Config = Config::new(),
   buffer~ : Buffer = Buffer(),
 ) -> Writer {
-  { buf: buffer, config, refs: Map([]), next_ref: 0, }
+  { buf: buffer, config, refs: Map([]), next_ref: 0, fresh: -2, }
 }
 
 ///|
@@ -252,6 +257,34 @@ pub fn Writer::write_null_flag(self : Writer, is_null : Bool) -> Unit {
 /// `shared` value is given a key of its own, and this one is kept out of the
 /// way of them.
 pub let root_key : Int32 = -1
+
+///|
+/// The flag for a reference to a value that has already been written, and
+/// whether it was: a key that names nothing yet writes nothing and answers
+/// `false`, because a reference to a value that is not on the wire cannot be
+/// written as one.
+pub fn Writer::write_ref(self : Writer, key : Int32) -> Bool {
+  match self.refs.get(key) {
+    Some(id) => {
+      self.write_byte(0xFE)
+      self.write_var_u32(id.reinterpret_as_uint())
+      true
+    }
+    None => false
+  }
+}
+
+///|
+/// The flag for a value that is tracked but was never named: it takes the next
+/// reference id, under a key of this writer's own below every caller's, so that
+/// the ids of the references that do name something still line up with a peer's.
+pub fn Writer::write_fresh(self : Writer) -> Unit {
+  let id = self.next_ref
+  self.refs.set(self.fresh, id)
+  self.fresh = self.fresh - 1
+  self.next_ref = id + 1
+  self.write_byte(0x00)
+}
 
 ///|
 /// The envelope of a value that may be written more than once, and whether the

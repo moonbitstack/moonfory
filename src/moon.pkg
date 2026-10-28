@@ -18,4 +18,11 @@ import {
   "moonbitstack/moonvar/leb128",
   "moonbitstack/moonvar/fixed",
   "moonbitstack/moondate",
+  "moonbitstack/moonmodel",
 }
+
+// The fixture tests read and write hex, which the library itself does not
+// expose: base16 is the reference implementation of that encoding.
+import {
+  "moonbitstack/moonbase/base16",
+} for "test"
