@@ -29,7 +29,12 @@ import {
 ```
 
 Then `@lib` is the package. Dependencies are `moonbitstack/moonvar` for the
-numbers and `moonbitstack/moondate` for the time types; nothing else.
+numbers, `moonbitstack/moondate` for the time types, and
+`moonbitstack/moonmodel` for the description of a struct.
+
+The tests need one more, `moonbitstack/moonbase/base16`, because a fixture is
+read and written as hex and hex is not this package's business: it does not
+export `hex` or `unhex`.
 
 ## Two entry points, four verbs
 
@@ -56,7 +61,6 @@ let value : T = @moonfory.load(reader)
 | `write_message(w, value)` | a writer and a value | head, value, nothing else |
 | `read_message(r)` | a reader | the one value the head announces |
 | `write_value(w, v)` / `read_value(r)` | a `Value` | the dynamic form |
-| `hex(bytes)` / `unhex(text)` | bytes or text | the other, for reading a fixture |
 
 `loads` reads exactly one value and then insists the message is finished, so two
 values in one buffer are a `Trailing` error rather than a silent truncation.
@@ -98,7 +102,7 @@ pub impl Codec for UserId with fn read_data(r, _ty) {
 | STRING | 21 | `String` | length-and-encoding header, then UTF-8 |
 | LIST / SET | 22 / 23 | `Array[T]` | count, element header, elements |
 | MAP | 24 | `Map[K, V]` | total, then key/value chunks |
-| STRUCT | 27 | `StructMeta` + fields | user id, then fields in Fory order |
+| STRUCT | 27 | `StructMeta` + fields | user id, schema fingerprint, then fields in Fory order |
 | ENUM | 25 | ordinal | a varint |
 | DURATION / TIMESTAMP / DATE | 37 / 38 / 39 | `@moondate.Span` / `Moment` / `Date` | see below |
 | DECIMAL | 40 | `(Int, BigInt)` | scale, then the unscaled integer |
@@ -152,13 +156,91 @@ error, and `clash=Handle(f)` lets you arbitrate.
 @moonfory.dumps(v, config=my_config, xlang=false, clash=Panic)
 ```
 
+## Describing a struct
+
+A struct's fields are a `@moonmodel` description — the same one an OpenAPI
+document or a `CREATE TABLE` would be generated from — plus the three things the
+wire needs that a description has no word for: the type ID the field goes out
+as, the tag that identifies it when the schema configures one, and whether the
+value may be shared.
+
+```moonbit
+let point = @moonfory.StructMeta::new("Point", 100, [
+  @moonfory.FieldMeta::new("x", @moonfory.TypeId::VarInt32),
+  @moonfory.FieldMeta::new("y", @moonfory.TypeId::VarInt32),
+])
+
+let person = @moonfory.StructMeta::new("Person", 101, [
+  @moonfory.FieldMeta::new("name", @moonfory.TypeId::String),
+  @moonfory.FieldMeta::new("age", @moonfory.TypeId::VarInt32),
+  // A list says what it holds, because the writer may leave the element type
+  // out of the header.
+  @moonfory.FieldMeta::new(
+    "tags", @moonfory.TypeId::List, element=Some(@moonfory.TypeId::String),
+  ),
+  // A field whose type is declared sends no type ID, so the schema has to say
+  // which struct it is.
+  @moonfory.FieldMeta::new(
+    "home", @moonfory.TypeId::Struct, nullable=true, child=Some(point),
+  ),
+])
+```
+
+From a `#model.derive` model, `StructMeta::of` fills the type IDs from the
+description's kinds, and takes the child schemas by name:
+
+```moonbit
+let meta = @moonfory.StructMeta::of(
+  model, user=101, children=[point], refs=["home"],
+)
+```
+
+A field's *description* is `FieldMeta::desc`, and `meta.model()` hands the whole
+`@moonmodel.Model` back, so one description can be published as a schema and
+used as a codec without being written twice. A kind with no wire type — `Any` —
+is refused rather than guessed at.
+
+## The schema fingerprint
+
+Every struct carries a four-byte fingerprint of its schema, and a peer checks it
+against its own before it trusts a field. It is `identifier,typeID,ref,nullable;`
+per field, in identifier order, hashed with MurmurHash3 x64 128 seeded with 47.
+
+Two conventions had to be picked, because the reference implementations differ:
+a field of a user type writes `0` for its type ID and `0` for its ref flag
+(neither can be compared across languages), and a list writes its element type as
+`[type,0,0]`. Under those two rules the fingerprints this package computes are
+the ones `pyfory` writes, byte for byte, and the all-primitive ones Go writes too.
+
 ## Shared and circular values
 
-MoonBit has no object identity to track, so a value that is meant to be shared is
-marked explicitly, with a key you choose. The first write emits the body; later
-writes emit a back-reference. A cycle read back is stitched together through the
-reader's node table, and a cycle that cannot be resolved is a `Cyclic` refusal
-rather than a hang.
+MoonBit has no object identity to track, so identity is a key you choose and the
+value carries: `Shared(key, value)` says "this is the value filed under `key`",
+and `Pointer(key)` says "the value already filed under `key`". The first one is
+written out in full; the second is two bytes.
+
+```moonbit
+let node = @moonfory.StructMeta::new("Node", 300, [
+  @moonfory.FieldMeta::new("val", @moonfory.TypeId::VarInt32),
+  @moonfory.FieldMeta::new("next", @moonfory.TypeId::Struct, track_ref=true),
+])
+
+// A node whose `next` is itself. Reference zero is the root, which this is.
+let value = @moonfory.Value::Struct(node, [
+  ("val", @moonfory.Value::Int(1L)),
+  ("next", @moonfory.Value::Pointer(0)),
+])
+
+@moonfory.dumps(value, track_ref=true)   // 01 00 1b ac02 eecb234f 02 fe 00
+```
+
+Those are the bytes Go's `fory` writes for `struct Node { Val int32; Next *Node }`,
+byte for byte, and Go reads them back into a struct whose `Next` is itself. A
+value that comes back from a peer is the same shape: the node it starts at is a
+`Shared`, and the field that leads back to it is a `Pointer` to the same key, so
+the value can be held without holding itself and written again unchanged.
+
+A typed value is marked the same way, with `shared` for the writer's key:
 
 ```moonbit
 let once = @moonfory.shared(7, "the same string")
@@ -167,7 +249,9 @@ let bytes = @moonfory.dumps(twice, track_ref=true)
 ```
 
 Turn `track_ref` on for both ends, or neither: a reader that is not tracking
-reads the first body and then a flag it does not expect.
+reads the first body and then a flag it does not expect. Python's `pyfory`
+cannot write a cycle at all — its serializer recurses — so Go is the peer the
+cyclic fixtures are checked against.
 
 ## The row format
 
@@ -222,8 +306,8 @@ carrying a negative nanosecond field.
 |:--|:--|
 | Compatible struct mode (28, 30) | It needs a schema registry to reconcile two type definitions; that belongs with `moonmodel`, not inside a codec |
 | FLOAT8 / FLOAT8_ARRAY (16, 56) | No peer in reach writes them; when one does, the table has the code |
-| Writing a shared reference from a `Value` | `Value` has no identity to point at; use `Shared[T]` with an explicit key |
 | Reading a struct without its schema | The schema is the user id's meaning; `loads(schemas=[...])` supplies it |
+| inferring which value is shared | Identity is not in a MoonBit value; say `Shared`/`Pointer` and the wire follows |
 
 Each refusal is a `Refused` variant with the offset that produced it, so a
 malformed message names where it stopped rather than "invalid input".
@@ -242,6 +326,32 @@ malformed message names where it stopped rather than "invalid input".
 | `Cyclic(at, got)` | a cycle that cannot be resolved |
 | `Trailing(at, got)` | bytes remain after the one message |
 | `Unsupported(kind)` | the type has no counterpart here |
+
+## Interop, as a test
+
+Every class of message this package reads has been read from bytes another
+implementation wrote, and the bytes that go the other way have been read by that
+implementation. The two peers are `pyfory` for Python and `fory` for Go.
+
+The fixtures are generated by `scripts/interop.py` and `scripts/interop.go`, run
+by hand, and checked in as a MoonBit file the tests read. CI runs the tests and
+needs neither language installed, so a byte-level interop test costs a second per
+push rather than a toolchain.
+
+```sh
+python3 scripts/interop.py     # writes src/fixtures_pyfory_test.mbt
+(cd scripts && go run .)       # writes src/fixtures_go_test.mbt
+moon fmt                       # the generated files are formatted by the toolchain
+```
+
+A fixture is the bytes and nothing else: the MoonBit side says what the value is.
+A test that could be made to pass by changing both sides at once is not one, so
+the expectation for each fixture is written out by hand in `src/fixture_test.mbt`.
+
+Three things the fixtures found, and this package now does: a nested struct goes
+out as its fingerprint and its fields with no type ID in front, a list whose
+element type the schema declares goes out without the type in its header, and a
+dense array goes out as a byte count and raw elements rather than as a list.
 
 ## Specifications
 

@@ -29,7 +29,7 @@
     </header>
 
     <main>
-      <section class="hero">
+      <section class="hero hero--screen">
         <div>
           <p class="eyebrow">Cross-language serialization</p>
           <h1>
@@ -65,6 +65,12 @@
           </div>
           <div class="hex" id="hex" aria-live="polite"></div>
           <div class="decode" id="decode"></div>
+          <p class="legend" aria-hidden="true">
+            <span class="t0">header · flag</span>
+            <span class="t1">type id</span>
+            <span class="t2">body</span>
+          </p>
+          <p class="foot">written here · read back by pyfory and fory-go</p>
         </aside>
       </section>
 
@@ -122,7 +128,7 @@
 
       <section class="band">
         <div class="wrap">
-          <div class="hero" style="padding: 0; grid-template-columns: 1fr 1fr">
+          <div class="hero hero--split">
             <div>
               <p class="kicker">The shape of the API</p>
               <h2>Four verbs, and the bytes.</h2>

@@ -46,10 +46,10 @@
 <span class="tok-k">let</span> xs <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span>[<span class="tok-n">1</span>, <span class="tok-n">2</span>, <span class="tok-n">3</span>])
 <span class="tok-k">let</span> m <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(</span>{ <span class="tok-s">"a"</span>: <span class="tok-n">1</span> })
 
-<span class="tok-n">println(@moonfory.hex(n))</span>   <span class="tok-c">// 01ff0401000000</span>
-<span class="tok-n">println(@moonfory.hex(s))</span>   <span class="tok-c">// 01ff150a6162</span>
-<span class="tok-n">println(@moonfory.hex(xs))</span>  <span class="tok-c">// 01ff16030804010000000200000003000000</span>
-<span class="tok-n">println(@moonfory.hex(m))</span>   <span class="tok-c">// 01ff180100011504066101000000</span></pre>
+<span class="tok-n">println(@base16.encode(n))</span>   <span class="tok-c">// 01ff0401000000</span>
+<span class="tok-n">println(@base16.encode(s))</span>   <span class="tok-c">// 01ff150a6162</span>
+<span class="tok-n">println(@base16.encode(xs))</span>  <span class="tok-c">// 01ff16030804010000000200000003000000</span>
+<span class="tok-n">println(@base16.encode(m))</span>   <span class="tok-c">// 01ff180100011504066101000000</span></pre>
       </div>
       <table>
         <tr><th>Value</th><th>Message</th><th>Reading it</th></tr>
@@ -81,12 +81,13 @@
   (<span class="tok-s">"x"</span>, <span class="tok-n">@moonfory.Value::Int(</span><span class="tok-n">1L</span>)),
   (<span class="tok-s">"y"</span>, <span class="tok-n">@moonfory.Value::Int(</span><span class="tok-n">2L</span>)),
 ])
-<span class="tok-n">println(@moonfory.hex(@moonfory.dumps(point)))</span>
-<span class="tok-c">// 01ff1b010100000002000000</span></pre>
+<span class="tok-n">println(@base16.encode(@moonfory.dumps(point)))</span>
+<span class="tok-c">// 01ff1b0194d631870100000002000000</span></pre>
       </div>
       <p>
-        <code>1b</code> is STRUCT (27), <code>01</code> is the user type id, and
-        then the two INT32 fields in Fory order. Read it back with
+        <code>1b</code> is STRUCT (27), <code>01</code> is the user type id,
+        <code>94d63187</code> is the schema's fingerprint, and then the two INT32
+        fields in Fory order. Read it back with
         <code>@moonfory.loads(bytes, schemas=[meta])</code>.
       </p>
 
@@ -128,6 +129,36 @@
 <span class="tok-n">println(back[</span><span class="tok-n">0</span>].value <span class="tok-n">==</span> back[<span class="tok-n">1</span>].value)  <span class="tok-c">// true</span></pre>
       </div>
 
+      <h2 id="cycle">A struct that contains itself</h2>
+      <p>
+        Identity is a key you choose, because a MoonBit value carries none:
+        <code>Shared</code> writes the value under a key, <code>Pointer</code>
+        points at one already written. A cycle is the two together, and these are
+        the bytes Go's <code>fory</code> writes for the same schema.
+      </p>
+      <div class="code">
+        <button class="copy" data-copy>copy</button>
+        <pre><span class="tok-k">let</span> node <span class="tok-n">=</span> <span class="tok-n">@moonfory.StructMeta::new(</span><span class="tok-s">"Node"</span>, <span class="tok-n">300</span>, [
+  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"val"</span>, <span class="tok-n">@moonfory.TypeId::VarInt32)</span>,
+  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"next"</span>, <span class="tok-n">@moonfory.TypeId::Struct</span>, <span class="tok-n">track_ref=true)</span>,
+])
+<span class="tok-k">let</span> value <span class="tok-n">=</span> <span class="tok-n">@moonfory.Value::Struct(node, [</span>
+  (<span class="tok-s">"val"</span>, <span class="tok-n">@moonfory.Value::Int(</span><span class="tok-n">1L</span>)),
+  (<span class="tok-s">"next"</span>, <span class="tok-n">@moonfory.Value::Pointer(</span><span class="tok-n">0</span>)),  <span class="tok-c">// the root is reference zero</span>
+])
+<span class="tok-n">println(@base16.encode(@moonfory.dumps(value, track_ref=true)))</span>
+<span class="tok-c">// 01001bac02eecb234f02fe00</span></pre>
+      </div>
+      <table>
+        <tr><th>Bytes</th><th>What they are</th></tr>
+        <tr><td><code>01</code></td><td>the header, cross-language flag set</td></tr>
+        <tr><td><code>00</code></td><td>a value that may be pointed at: the root, which is reference zero</td></tr>
+        <tr><td><code>1b ac02</code></td><td>STRUCT (27), user type id 300</td></tr>
+        <tr><td><code>eecb234f</code></td><td>the fingerprint of the schema</td></tr>
+        <tr><td><code>02</code></td><td><code>val</code>, as a zig-zag varint</td></tr>
+        <tr><td><code>fe 00</code></td><td><code>next</code>: a reference to reference zero — itself</td></tr>
+      </table>
+
       <h2 id="refusals">When it refuses</h2>
       <p>
         A malformed message is a <code>Refused</code>, with the offset that
@@ -136,7 +167,7 @@
       <div class="code">
         <button class="copy" data-copy>copy</button>
         <pre><span class="tok-k">let</span> outcome <span class="tok-n">=</span> <span class="tok-k">try</span> {
-  <span class="tok-k">let</span> _ <span class="tok-n">:</span> <span class="tok-n">@moonfory.Value</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.loads(@moonfory.unhex(</span><span class="tok-s">"01ff040100"</span>))
+  <span class="tok-k">let</span> _ <span class="tok-n">:</span> <span class="tok-n">@moonfory.Value</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.loads(@base16.decode(</span><span class="tok-s">"01ff040100"</span>))
   <span class="tok-s">"read"</span>
 } <span class="tok-k">catch</span> {
   failure <span class="tok-n">=></span> failure<span class="tok-n">.to_string()</span>
