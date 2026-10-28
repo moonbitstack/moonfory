@@ -52,3 +52,15 @@ jobs:
       - name: interfaces are up to date
         run: |
           moon info --target all && git diff --exit-code
+
+      # The reference is generated from the interface and the doc comments, so
+      # a change to either without regenerating is a stale page on the site.
+      - name: api reference is up to date
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          python3 scripts/api.py
+          if [ -n "$(git status --porcelain -- docs/api)" ]; then
+            git status --short -- docs/api
+            echo "::error::docs/api is stale; run 'python3 scripts/api.py' and commit the result"
+            exit 1
+          fi
