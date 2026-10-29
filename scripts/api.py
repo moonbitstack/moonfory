@@ -606,6 +606,7 @@ def shell(title: str, description: str, root: str, body: str) -> str:
     <title>%(title)s</title>
     <meta name="description" content="%(desc)s" />
     <link rel="stylesheet" href="%(root)sassets/style.css" />
+    <script type="module" src="%(root)sassets/scrollbar.js"></script>
     <link rel="icon" href="%(favicon)s" />
   </head>
   <body>
