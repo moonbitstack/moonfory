@@ -1,4 +1,4 @@
-name: Publish site
+name: Docs
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
     paths:
       - "docs/**"
-      - ".github/workflows/pages.yml"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
