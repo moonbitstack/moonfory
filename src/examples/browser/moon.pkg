@@ -1,0 +1,10 @@
+// The site's engine: moonfory built to JavaScript for the byte tape on the home
+// page. A sample's name in, the bytes moonfory writes for it out, as hex.
+import {
+  "moonbitstack/moonfory",
+  "moonbitstack/moonbase/base16",
+}
+
+options(
+  link: { "js": { "exports": [ "sample" ], "format": "esm" } },
+)

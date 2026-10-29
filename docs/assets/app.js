@@ -1,36 +1,30 @@
-/* The byte tape and the copy buttons. No framework, no tracking, no network. */
+/* The byte tape and the copy buttons. No framework, no tracking. */
 
 (function () {
   "use strict";
 
   var samples = {
     int: {
-      hex: "01ff042a000000",
       decode:
         "<b>INT32</b> — head <code>01</code>, NOT_NULL <code>ff</code>, type <code>04</code>, then <code>2a 00 00 00</code> = 42 little-endian.",
     },
     str: {
-      hex: "01ff150a6162",
       decode:
         "<b>STRING</b> — type <code>15</code>, header <code>0a</code> = (2 &lt;&lt; 2) | UTF-8, then <code>61 62</code> = \"ab\".",
     },
     bool: {
-      hex: "01ff0101",
       decode:
         "<b>BOOL</b> — type <code>01</code>, then one byte: <code>01</code> is true.",
     },
     float: {
-      hex: "01ff14000000000000f83f",
       decode:
         "<b>FLOAT64</b> — type <code>14</code>, then the IEEE 754 bits of 1.5, little-endian.",
     },
     list: {
-      hex: "01ff16030804010000000200000003000000",
       decode:
         "<b>LIST</b> — count 3, element header <code>08</code> (all the same type), element type <code>04</code> (INT32), then three little-endian ints.",
     },
     map: {
-      hex: "01ff180100011504066101000000",
       decode:
         "<b>MAP</b> — total 1, chunk header <code>00</code>, chunk size 1, key STRING, value INT32, then the pair.",
     },
@@ -40,10 +34,18 @@
   var decodeEl = document.getElementById("decode");
   var picker = document.getElementById("picker");
 
+  // The bytes are what moonfory writes, built to JavaScript by the docs
+  // workflow (engine/moonfory.js); the notes beside them explain those bytes.
+  var engine = import("../engine/moonfory.js");
+
   function render(key) {
     var s = samples[key];
     if (!s || !hexEl) return;
-    var bytes = s.hex.match(/.{2}/g) || [];
+    engine.then(function (m) { paint(s, m.sample(key)); });
+  }
+
+  function paint(s, hex) {
+    var bytes = hex.match(/.{2}/g) || [];
     hexEl.innerHTML = "";
     bytes.forEach(function (b, i) {
       var span = document.createElement("span");
