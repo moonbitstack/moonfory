@@ -1,6 +1,6 @@
 name = "moonbitstack/moonfory"
 
-version = "0.1.1"
+version = "0.1.2"
 
 readme = "README.md"
 
@@ -8,7 +8,18 @@ repository = "https://github.com/moonbitstack/moonfory"
 
 license = "Apache-2.0"
 
-keywords = [ "serialization", "fory", "moonbit" ]
+keywords = [
+  "fory",
+  "apache-fory",
+  "fury",
+  "serialization",
+  "binary",
+  "cross-language",
+  "xlang",
+  "row-format",
+  "codec",
+  "moonbit",
+]
 
 description = "The Fory cross-language binary format for MoonBit."
 
