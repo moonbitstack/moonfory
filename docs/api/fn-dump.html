@@ -44,7 +44,7 @@
       <article class="article">
         <p class="eyebrow">API · fn</p>
         <h2>dump</h2>
-        <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L591">codec.mbt:591</a></p>
+        <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L592">codec.mbt:592</a></p>
         <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub fn[T : Codec] dump(T, @buffer.Buffer, config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -&gt; Unit raise</pre></div>
         <p>The same, into a buffer the caller keeps: for a stream of messages written one after another, or for a buffer that already holds a header of its own.</p>
         <p>The configuration is the record, then this call's flat mirrors: the library preset is beaten by the record, and the record by the flat mirrors, unless <code>wins</code> says otherwise. A flat mirror that contradicts the record beside it is what <code>clash</code> arbitrates: taken silently by <code>wins</code>, refused, or handed to the caller's function as (the record, the two as one).</p>

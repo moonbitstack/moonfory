@@ -44,7 +44,7 @@
       <article class="article">
         <p class="eyebrow">API · fn</p>
         <h2>write_message</h2>
-        <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L495">codec.mbt:495</a></p>
+        <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L496">codec.mbt:496</a></p>
         <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub fn[T : Codec] write_message(Writer, T) -&gt; Unit raise</pre></div>
         <p>Write a value as a complete message: the root's flag, the type ID, then everything after it.</p>
         <p>The flag belongs to the message and not to the value — the specification's <code>write_ref_or_null</code> runs here as it runs before a nullable field — so it is written where the message is, and not in <code>write_data</code>, which belongs to the value. A message with no value in it is the flag alone.</p>

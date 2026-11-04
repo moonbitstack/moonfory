@@ -159,23 +159,26 @@ def read_mbti(path: Path) -> list[Item]:
     impls: list[tuple[str, str]] = []
 
     i = 0
+    derives: list[str] = []
     while i < len(lines):
         line = lines[i]
 
-        # A type: header, body, and possibly `derive(...)` on the closing line.
+        # A type: `#derive(...)` above it, then its header and body.
+        attr = re.match(r"#derive\(([^)]*)\)", line)
+        if attr:
+            derives = [p.strip() for p in attr.group(1).split(",")]
+            i += 1
+            continue
         m = ITEM_RE.match(line)
         if m:
             kind = "error" if m.group(1) == "suberror" else m.group(1)
-            item = Item(kind=kind, name=m.group(2), sig=line)
+            item = Item(kind=kind, name=m.group(2), sig=line, derives=derives)
+            derives = []
             body: list[str] = []
             i += 1
             while i < len(lines):
                 body_line = lines[i]
                 if body_line.strip().startswith("}"):
-                    tail = body_line.strip()
-                    d = re.search(r"derive\(([^)]*)\)", tail)
-                    if d:
-                        item.derives = [p.strip() for p in d.group(1).split(",")]
                     i += 1
                     break
                 body.append(body_line)
@@ -349,6 +352,10 @@ def _scan_file(path: Path, found: dict[str, dict]) -> None:
             if text.startswith(" "):
                 text = text[1:]
             (member_buffer if owner else buffer).append(text)
+            i += 1
+            continue
+
+        if line.startswith("#"):
             i += 1
             continue
 
