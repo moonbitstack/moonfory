@@ -11,6 +11,7 @@
 /// An integer of any width reads as `Int` or `UInt` at sixty-four bits, and a
 /// float of any width as `Float`, because a value read without a schema has no
 /// width to be. The typed codecs keep the width they were given.
+#derive(Eq, Debug)
 pub(all) enum Value {
   /// Nothing, which is what a nullable field holds when it holds nothing.
   Null
@@ -55,7 +56,7 @@ pub(all) enum Value {
   /// a value a reader can hold without it holding itself, and a writer can send
   /// again byte for byte.
   Pointer(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A value, as text.

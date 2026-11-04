@@ -8,6 +8,7 @@
 /// name here is something the writer did that the specification does not allow,
 /// and every one of them carries the offset it happened at, because a byte
 /// stream has no line numbers to point at.
+#derive(Eq, Debug)
 pub(all) suberror Refused {
   /// The message ends in the middle of a value.
   Truncated(at~ : Int32, want~ : Int32, got~ : Int32)
@@ -33,7 +34,7 @@ pub(all) suberror Refused {
   Trailing(at~ : Int32, got~ : Int32)
   /// A value with no cross-language counterpart.
   Unsupported(kind~ : String)
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl Show for Refused with fn output(self, logger) {

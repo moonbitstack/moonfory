@@ -290,12 +290,13 @@ fn narrow(r : Reader, v : Int64) -> Int32 raise {
 /// and not a promise — so the key is the caller's, the way `Rc` is the caller's
 /// in Rust: two writes of the same key send the value once and point at it
 /// afterwards.
+#derive(Eq, Debug)
 pub(all) struct Shared[T] {
   /// The name the caller gives the value.
   key : Int32
   /// The value itself.
   value : T
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Shared with Debug::{to_repr}

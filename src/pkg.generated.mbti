@@ -55,9 +55,10 @@ pub fn write_value(Writer, Value) -> Unit raise
 pub fn write_value_data(Writer, Value) -> Unit raise
 
 // Errors
+#derive(Eq, @debug.Debug)
 pub(all) suberror Clashed {
   Clashed(name~ : String)
-} derive(Eq, @debug.Debug)
+}
 pub fn Clashed::equal(Self, Self) -> Bool
 pub fn Clashed::not_equal(Self, Self) -> Bool
 pub fn Clashed::output(Self, &Logger) -> Unit
@@ -65,6 +66,7 @@ pub fn Clashed::to_repr(Self) -> @debug.Repr
 pub fn Clashed::to_string(Self) -> String
 pub impl Show for Clashed
 
+#derive(Eq, @debug.Debug)
 pub(all) suberror Refused {
   Truncated(at~ : Int32, want~ : Int32, got~ : Int32)
   TooLarge(at~ : Int32, limit~ : Int64, got~ : Int64)
@@ -77,7 +79,7 @@ pub(all) suberror Refused {
   Cyclic(at~ : Int32, got~ : Int32)
   Trailing(at~ : Int32, got~ : Int32)
   Unsupported(kind~ : String)
-} derive(Eq, @debug.Debug)
+}
 pub fn Refused::equal(Self, Self) -> Bool
 pub fn Refused::not_equal(Self, Self) -> Bool
 pub fn Refused::output(Self, &Logger) -> Unit
@@ -96,6 +98,7 @@ pub(all) struct Config {
 }
 pub fn Config::new(xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct FieldMeta {
   desc : @moonmodel.Field
   ty : TypeId
@@ -103,7 +106,7 @@ pub(all) struct FieldMeta {
   track_ref : Bool
   child : StructMeta?
   element : TypeId?
-} derive(Eq, @debug.Debug)
+}
 pub fn FieldMeta::equal(Self, Self) -> Bool
 pub fn FieldMeta::from(@moonmodel.Field, tag? : Int32?, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -> Self raise
 pub fn FieldMeta::identifier(Self) -> String
@@ -177,12 +180,13 @@ pub fn Reader::seek(Self, Int32) -> Unit
 pub fn Reader::set_node(Self, Int32, Value) -> Unit
 pub fn Reader::spend(Self, Int32) -> Unit raise
 
+#derive(Eq, @debug.Debug)
 pub(all) enum RefFlag {
   Null
   Ref(id~ : Int32)
   NotNull
   RefValue(id~ : Int32)
-} derive(Eq, @debug.Debug)
+}
 pub fn RefFlag::equal(Self, Self) -> Bool
 pub fn RefFlag::not_equal(Self, Self) -> Bool
 pub fn RefFlag::to_repr(Self) -> @debug.Repr
@@ -207,11 +211,12 @@ pub fn RowCursor::is_null(Self, Int32) -> Bool
 pub fn RowCursor::length(Self) -> Int32
 pub fn RowCursor::new(BytesView, RowSchema, base? : Int32) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RowField {
   name : String
   ty : RowType
   nullable : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn RowField::equal(Self, Self) -> Bool
 pub fn RowField::not_equal(Self, Self) -> Bool
 pub fn RowField::to_repr(Self) -> @debug.Repr
@@ -221,6 +226,7 @@ pub(all) struct RowSchema {
 }
 pub fn RowSchema::new(Array[RowField]) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum RowType {
   Bool
   Int8
@@ -237,11 +243,12 @@ pub(all) enum RowType {
   Array(RowType)
   Map(RowType, RowType)
   Struct(Array[RowField])
-} derive(Eq, @debug.Debug)
+}
 pub fn RowType::equal(Self, Self) -> Bool
 pub fn RowType::not_equal(Self, Self) -> Bool
 pub fn RowType::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum RowValue {
   Null
   Bool(Bool)
@@ -259,15 +266,16 @@ pub(all) enum RowValue {
   Array(Array[RowValue])
   Map(Array[(RowValue, RowValue)])
   Struct(Array[RowValue])
-} derive(Eq, @debug.Debug)
+}
 pub fn RowValue::equal(Self, Self) -> Bool
 pub fn RowValue::not_equal(Self, Self) -> Bool
 pub fn RowValue::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Shared[T] {
   key : Int32
   value : T
-} derive(Eq, @debug.Debug)
+}
 pub fn[T : Eq] Shared::equal(Self[T], Self[T]) -> Bool
 pub fn[T : Eq] Shared::not_equal(Self[T], Self[T]) -> Bool
 pub fn[T : Codec] Shared::read_data(Reader, TypeId) -> Self[T] raise
@@ -276,11 +284,12 @@ pub fn[T : Codec] Shared::ty(Self[T]) -> TypeId
 pub fn[T : Codec] Shared::write_data(Self[T], Writer) -> Unit raise
 pub impl[T : Codec] Codec for Shared[T]
 
+#derive(Eq, @debug.Debug)
 pub struct StructMeta {
   model_ : @moonmodel.Model
   id_ : Int32
   wire_ : Array[(TypeId, Int32?, Bool, StructMeta?, TypeId?)]
-} derive(Eq, @debug.Debug)
+}
 pub fn StructMeta::equal(Self, Self) -> Bool
 pub fn StructMeta::fields(Self) -> Array[FieldMeta]
 pub fn StructMeta::find(Self, String) -> FieldMeta?
@@ -298,6 +307,7 @@ pub fn StructMeta::to_string(Self) -> String
 pub fn StructMeta::user(Self) -> Int32
 pub impl Show for StructMeta
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TypeId {
   Unknown
   Bool
@@ -356,7 +366,7 @@ pub(all) enum TypeId {
   BFloat16Array
   Float32Array
   Float64Array
-} derive(Eq, @debug.Debug)
+}
 pub fn TypeId::arrayed(Self) -> Self?
 pub fn TypeId::code(Self) -> Int32
 pub fn TypeId::element(Self) -> Self?
@@ -377,6 +387,7 @@ pub fn TypeId::to_repr(Self) -> @debug.Repr
 pub fn TypeId::to_string(Self) -> String
 pub impl Show for TypeId
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Value {
   Null
   Bool(Bool)
@@ -395,7 +406,7 @@ pub(all) enum Value {
   Decimal(Int32, @bigint.BigInt)
   Shared(Int32, Value)
   Pointer(Int32)
-} derive(Eq, @debug.Debug)
+}
 pub fn Value::equal(Self, Self) -> Bool
 pub fn Value::not_equal(Self, Self) -> Bool
 pub fn Value::output(Self, &Logger) -> Unit
@@ -407,10 +418,11 @@ pub fn Value::write_data(Self, Writer) -> Unit raise
 pub impl Show for Value
 pub impl Codec for Value
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Wins {
   Base
   Extra
-} derive(Eq, @debug.Debug)
+}
 pub fn Wins::equal(Self, Self) -> Bool
 pub fn Wins::not_equal(Self, Self) -> Bool
 pub fn Wins::to_repr(Self) -> @debug.Repr

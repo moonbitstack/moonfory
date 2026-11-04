@@ -7,6 +7,7 @@
 /// The four flags are the specification's, and they are how a nullable field, a
 /// shared value and a value that is simply there are told apart: one byte,
 /// before the value, that says which.
+#derive(Eq, Debug)
 pub(all) enum RefFlag {
   /// `0xFD`: there is no value. What a nullable field holds when it holds
   /// nothing.
@@ -19,7 +20,7 @@ pub(all) enum RefFlag {
   /// `0x00`: there is a value here, and it may be pointed at; the id is the one
   /// it is given.
   RefValue(id~ : Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend RefFlag with Eq::{not_equal, equal}

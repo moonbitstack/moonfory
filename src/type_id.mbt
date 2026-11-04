@@ -10,6 +10,7 @@
 /// variant names are the specification's too, except `NoneType`, which Python
 /// calls `NoneType` and the table calls `NONE`; MoonBit spells nothing `None`,
 /// so the spelling here is Python's.
+#derive(Eq, Debug)
 pub(all) enum TypeId {
   Unknown
   Bool
@@ -68,7 +69,7 @@ pub(all) enum TypeId {
   BFloat16Array
   Float32Array
   Float64Array
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend TypeId with Eq::{not_equal, equal}

@@ -87,12 +87,13 @@ pub fn Config::new(
 ///
 /// `Extra` — the flat arguments — is the default, because a caller who took the
 /// trouble to write `track_ref=true` on one call means it on that call.
+#derive(Eq, Debug)
 pub(all) enum Wins {
   /// The record wins: the flat arguments are ignored where they clash.
   Base
   /// The flat arguments win. The default.
   Extra
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Wins with Eq::{not_equal, equal}
@@ -127,10 +128,11 @@ priv struct Patch {
 ///|
 /// What `OnClash::Panic` raises: a setting given twice where the caller asked
 /// to hear about it.
+#derive(Eq, Debug)
 pub(all) suberror Clashed {
   /// The name of the setting, and the two values it was given.
   Clashed(name~ : String)
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl Show for Clashed with fn output(self, logger) {

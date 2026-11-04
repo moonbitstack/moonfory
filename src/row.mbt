@@ -19,6 +19,7 @@
 ///
 /// It is the cross-language primitive set, plus the three shapes that live in the
 /// variable region: a homogeneous array, a key-and-value map, and a nested struct.
+#derive(Eq, Debug)
 pub(all) enum RowType {
   Bool
   Int8
@@ -38,7 +39,7 @@ pub(all) enum RowType {
   Array(RowType)
   Map(RowType, RowType)
   Struct(Array[RowField])
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend RowType with Eq::{not_equal, equal}
@@ -48,6 +49,7 @@ pub extend RowType with Debug::{to_repr}
 
 ///|
 /// One field of a row schema: its name, its type, and whether it may be null.
+#derive(Eq, Debug)
 pub(all) struct RowField {
   /// The field name, kept for readability and for round-tripping a schema.
   name : String
@@ -55,7 +57,7 @@ pub(all) struct RowField {
   ty : RowType
   /// Whether a null in this field is permitted.
   nullable : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend RowField with Eq::{not_equal, equal}
@@ -83,6 +85,7 @@ pub fn RowSchema::new(fields : Array[RowField]) -> RowSchema {
 /// It mirrors `RowType` rather than the cross-language `Value`, because the row
 /// format is schema-driven: the type of every field is fixed by the schema, not
 /// carried in the bytes. `Null` stands for a null field or a null array element.
+#derive(Eq, Debug)
 pub(all) enum RowValue {
   Null
   Bool(Bool)
@@ -100,7 +103,7 @@ pub(all) enum RowValue {
   Array(Array[RowValue])
   Map(Array[(RowValue, RowValue)])
   Struct(Array[RowValue])
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend RowValue with Eq::{not_equal, equal}

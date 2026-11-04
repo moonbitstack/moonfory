@@ -12,6 +12,7 @@
 /// the wire's own: the type ID that kind goes out as, the tag that identifies
 /// the field when the schema configures one, and whether the value may be
 /// shared.
+#derive(Eq, Debug)
 pub(all) struct FieldMeta {
   /// The description: name, kind, nullability, documentation.
   desc : @moonmodel.Field
@@ -40,7 +41,7 @@ pub(all) struct FieldMeta {
   /// the type out of the list header, which is a byte saved per list. Reading
   /// such a list needs the type the schema left out, and this is where it is.
   element : TypeId?
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl Show for FieldMeta with fn output(self, logger) {
@@ -250,6 +251,7 @@ pub fn compare_field(a : FieldMeta, b : FieldMeta) -> Int32 {
 /// back for a MoonBit type. The wire records are index-aligned with the model's
 /// fields and carry the three things a description does not: the type ID, the
 /// tag and the reference policy.
+#derive(Eq, Debug)
 pub struct StructMeta {
   /// The description: the type's name, its documentation, and its fields.
   model_ : @moonmodel.Model
@@ -258,7 +260,7 @@ pub struct StructMeta {
   /// Per field, in declaration order: the type ID, the tag, whether it may be
   /// shared, the struct it holds, and the element type of the list it holds.
   wire_ : Array[(TypeId, Int32?, Bool, StructMeta?, TypeId?)]
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl Show for StructMeta with fn output(self, logger) {
