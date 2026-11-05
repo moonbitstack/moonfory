@@ -121,6 +121,20 @@ pub fn TypeId::of_kind(kind : @moonmodel.Type) -> TypeId raise {
     Ref(_) => Struct
     Nest(_) => Struct
     Any => raise Refused::Unsupported(kind="model kind any")
+    // Fory's own table sends `int32` and `int64` as the variable-length forms, as above.
+    Wire(layout) =>
+      match (layout.kind, layout.bits, layout.unsigned) {
+        (Int | Big, Some(8), false) => Int8
+        (Int | Big, Some(16), false) => Int16
+        (Int | Big, Some(32), false) => VarInt32
+        (Int | Big, Some(64), false) => VarInt64
+        (Int | Big, Some(8), true) => UInt8
+        (Int | Big, Some(16), true) => UInt16
+        (Int | Big, Some(32), true) => VarUInt32
+        (Int | Big, Some(64), true) => VarUInt64
+        (Real, Some(32), _) => Float32
+        (inner, _, _) => TypeId::of_kind(inner)
+      }
     Raw(raw) =>
       match raw {
         Object(fields) =>
