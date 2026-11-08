@@ -136,7 +136,7 @@ class Item:
 
 
 ITEM_RE = re.compile(r"^pub(?:\(all\))?\s+(struct|enum|suberror)\s+([A-Za-z_]\w*)")
-TRAIT_RE = re.compile(r"^pub\s+trait\s+([A-Za-z_]\w*)")
+TRAIT_RE = re.compile(r"^pub(?:\((?:all|open)\))?\s+trait\s+([A-Za-z_]\w*)")
 FN_RE = re.compile(r"^pub\s+fn(?:\[[^\]]*\])?\s+([A-Za-z_]\w*)(?:::([A-Za-z_]\w*))?")
 LET_RE = re.compile(r"^pub\s+let\s+([A-Za-z_]\w*)\s*:\s*(.+)$")
 IMPL_RE = re.compile(r"^pub\s+impl(?:\[[^\]]*\])?\s+([A-Za-z_]\w*)\s+for\s+([A-Za-z_]\w*)")
@@ -397,7 +397,7 @@ def _scan_file(path: Path, found: dict[str, dict]) -> None:
             i += 1
             continue
 
-        m = re.match(r"^pub\s+trait\s+([A-Za-z_]\w*)", line)
+        m = re.match(r"^pub(?:\((?:all|open)\))?\s+trait\s+([A-Za-z_]\w*)", line)
         if m:
             keep(buffer, "trait:%s" % m.group(1), i + 1)
             buffer = []

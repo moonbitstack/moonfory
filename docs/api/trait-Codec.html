@@ -45,7 +45,7 @@
         <p class="eyebrow">API · trait</p>
         <h2>Codec</h2>
         <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L16">codec.mbt:16</a></p>
-        <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub trait Codec {
+        <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub(open) trait Codec {
   fn ty(Self) -&gt; TypeId
   fn write_data(Self, Writer) -&gt; Unit raise
   fn read_data(Reader, TypeId) -&gt; Self raise

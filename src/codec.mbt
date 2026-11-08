@@ -13,7 +13,7 @@
 /// Everything this package ships implements this trait, and a caller's own type
 /// implements it the same way: there is no second path for the types that come
 /// with the library.
-pub trait Codec {
+pub(open) trait Codec {
   /// The type ID: the number that begins a value of this type.
   fn ty(Self) -> TypeId
   /// Everything after the type ID.
