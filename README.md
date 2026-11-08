@@ -427,8 +427,10 @@ carrying a negative nanosecond field.
 
 | Thing | Why not |
 |:--|:--|
-| Compatible struct mode (28, 30) | It needs a schema registry to reconcile two type definitions; that belongs with `moonmodel`, not inside a codec |
-| FLOAT8 / FLOAT8_ARRAY (16, 56) | No peer in reach writes them; when one does, the table has the code |
+| Named and compatible structs (26, 28, 29, 30) | They need a schema registry to reconcile two type definitions; that belongs with `moonmodel`, not inside a codec |
+| Union, typed union, named union (33, 34, 35) | No MoonBit type maps to one, and which branch a peer meant cannot be recovered without the registry the named form expects |
+| Ext (31, 32) | Another language's object graph, which needs a decoder this package does not have |
+| FLOAT8 / FLOAT8_ARRAY (16, 52) | No peer in reach writes them; when one does, the table has the code |
 | Reading a struct without its schema | The schema is the user id's meaning; `loads(schemas=[...])` supplies it |
 | inferring which value is shared | Identity is not in a MoonBit value; say `Shared`/`Pointer` and the wire follows |
 
