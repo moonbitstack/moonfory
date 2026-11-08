@@ -227,6 +227,12 @@ assert_eq(replayed, 42)</span></pre>
 ])</span></pre>
         </div>
         <p>
+          A value writes its fields in Fory order whatever order it was given them
+          in, and a reader hands them back in the order the schema declares them, so
+          a value written and read again is equal to itself and writes the same
+          bytes a second time.
+        </p>
+        <p>
           From a <code>#model.derive</code> model, <code>StructMeta::of</code> fills
           the type IDs from the description's kinds and takes the child schemas by
           name; <code>meta.model()</code> hands the <code>Model</code> back, so one

@@ -76,7 +76,7 @@ fn pyfory_expected() -> Map[String, String] {
     "date": "Date(1)",
     "duration": "Duration(90, 500000)",
     "struct_point": "Struct(100, [x: Int(1), y: Int(2)])",
-    "struct_person": "Struct(101, [age: Int(30), home: Struct(100, [x: Int(3), y: Int(4)]), name: Str(\"ann\"), tags: List(List, [Str(\"x\"), Str(\"y\")])])",
+    "struct_person": "Struct(101, [name: Str(\"ann\"), age: Int(30), tags: List(List, [Str(\"x\"), Str(\"y\")]), home: Struct(100, [x: Int(3), y: Int(4)])])",
     "enum": "Enum(200, 1)",
   }
 }

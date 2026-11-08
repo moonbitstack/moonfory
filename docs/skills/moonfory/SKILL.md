@@ -98,9 +98,9 @@ assert_eq(@moonfory.dumps(read_place), place_bytes)
 ```
 
 The fields go out in Fory order — primitives that cannot be absent first, then
-the rest — not in the order they were listed, and they come back in that same
-order. `point.ordered()` gives the order as a list, which is the quickest way to
-see what a peer will read.
+the rest — not in the order they were listed, and they come back in the order
+the schema declares. So a value written and read again is equal to itself, and
+`point.ordered()` gives the order the peer will see on the wire.
 
 A value written twice, or a cycle, carries a key: `Shared(key, value)` writes it
 once and `Pointer(key)` points at it. Both ends need `track_ref=true`, and a

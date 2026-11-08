@@ -241,7 +241,8 @@ let person = @moonfory.StructMeta::new("Person", 101, [
 
 A `Value` under that schema writes its fields in Fory order — the primitives
 that cannot be absent first, then the rest — whatever order the caller listed
-them in, and reading hands them back in the order the wire carried them:
+them in. Reading puts the order back, so the value that comes out is the value
+that went in:
 
 ```moonbit
 let ada = @moonfory.Value::Struct(person, [
@@ -262,21 +263,9 @@ let ada_bytes = @moonfory.dumps(ada)
 let read_back : @moonfory.Value = @moonfory.loads(
   ada_bytes, schemas=[person, point],
 )
-assert_eq(
-  read_back,
-  @moonfory.Value::Struct(person, [
-    ("age", @moonfory.Value::Int(36L)),
-    ("home", @moonfory.Value::Struct(point, [
-      ("x", @moonfory.Value::Int(1L)),
-      ("y", @moonfory.Value::Int(2L)),
-    ])),
-    ("name", @moonfory.Value::Str("ada")),
-    ("tags", @moonfory.Value::List(@moonfory.TypeId::List, [
-      @moonfory.Value::Str("math"),
-    ])),
-  ]),
-)
-// The same order out as in: a value read and written again is the same bytes.
+assert_eq(read_back, ada)
+// And writing it again is the bytes it came from: the writer sorts, the reader
+// sorts back.
 assert_eq(@moonfory.dumps(read_back), ada_bytes)
 ```
 

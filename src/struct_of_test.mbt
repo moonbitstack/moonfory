@@ -152,7 +152,7 @@ test "a struct from a description writes the bytes the same struct built by hand
 }
 
 ///|
-test "fields come back in Fory order, which is the order the wire carried" {
+test "fields come back in the order the schema declares, not the wire's" {
   let home = @moonfory.StructMeta::new("Home", 212, [
     @moonfory.FieldMeta::new("city", @moonfory.TypeId::String),
   ])
@@ -170,8 +170,34 @@ test "fields come back in Fory order, which is the order the wire carried" {
     ),
   ])
   let bytes = @moonfory.dumps(value)
+  // The wire puts the primitive first; the value that comes back is the one
+  // that went in, declaration order and all.
   let back : @moonfory.Value = @moonfory.loads(bytes, schemas=[meta, home])
-  assert_eq(names_of(back), ["age", "home", "name"])
-  // Whatever order it is handed back in, writing it again is the same bytes.
+  assert_eq(names_of(back), ["name", "age", "home"])
+  assert_eq(back, value)
+  // And writing it again is the same bytes, because the writer re-sorts.
   assert_eq(@moonfory.dumps(back), bytes)
+}
+
+///|
+test "a cycle is reordered as a whole, so the node it points at agrees" {
+  // `next` sorts before `tag` on the wire, so the wire order is not the order
+  // the schema declares: a reference reaches a struct that is still being read,
+  // and that struct has to end up in the same order as the one that points here.
+  let node = @moonfory.StructMeta::new("Ring", 213, [
+    @moonfory.FieldMeta::new("tag", @moonfory.TypeId::String),
+    @moonfory.FieldMeta::new("next", @moonfory.TypeId::Struct, track_ref=true),
+  ])
+  let ring = @moonfory.Value::Struct(node, [
+    ("tag", @moonfory.Value::Str("root")),
+    ("next", @moonfory.Value::Pointer(0)),
+  ])
+  let bytes = @moonfory.dumps(ring, track_ref=true)
+  let back : @moonfory.Value = @moonfory.loads(
+    bytes,
+    schemas=[node],
+    track_ref=true,
+  )
+  assert_eq(back, ring)
+  assert_eq(@moonfory.dumps(back, track_ref=true), bytes)
 }

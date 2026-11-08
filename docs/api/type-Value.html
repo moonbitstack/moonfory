@@ -74,7 +74,8 @@
         <tr><td><code>Binary(Bytes)</code></td><td><p>Bytes: the BINARY type.</p></td></tr>
         <tr><td><code>List(TypeId, Array[Value])</code></td><td><p>A list or a set: which one, and the elements.</p></td></tr>
         <tr><td><code>Map(Array[(Value, Value)])</code></td><td><p>A map: the pairs, in the order they were written.</p></td></tr>
-        <tr><td><code>Struct(StructMeta, Array[(String, Value)])</code></td><td><p>A struct: its schema, and its fields by name.</p></td></tr>
+        <tr><td><code>Struct(StructMeta, Array[(String, Value)])</code></td><td><p>A struct: its schema, and its fields by name.</p>
+        <p>A writer takes the fields in Fory order whatever order they are given in, and a reader hands them back in the order the schema declares them, so a value written and read again is equal to itself.</p></td></tr>
         <tr><td><code>Enum(Int32, Int32)</code></td><td><p>An enum: the user type ID of its type, and the variant's ID.</p></td></tr>
         <tr><td><code>Timestamp(Int64, Int32)</code></td><td><p>Seconds and nanoseconds since the epoch: the TIMESTAMP type.</p></td></tr>
         <tr><td><code>Date(Int64)</code></td><td><p>Days since the epoch: the DATE type.</p></td></tr>

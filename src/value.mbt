@@ -32,6 +32,10 @@ pub(all) enum Value {
   /// A map: the pairs, in the order they were written.
   Map(Array[(Value, Value)])
   /// A struct: its schema, and its fields by name.
+  ///
+  /// A writer takes the fields in Fory order whatever order they are given in,
+  /// and a reader hands them back in the order the schema declares them, so a
+  /// value written and read again is equal to itself.
   Struct(StructMeta, Array[(String, Value)])
   /// An enum: the user type ID of its type, and the variant's ID.
   Enum(Int32, Int32)
@@ -391,12 +395,47 @@ fn skip_hash(r : Reader) -> Unit raise {
 }
 
 ///|
-/// Read a struct's fields in Fory order, and hand them back by name.
+/// Read a struct's fields and hand them back in the order the schema declares.
+///
+/// The wire carries them in Fory order, which is the writer's arrangement and
+/// not the order the caller wrote them in. Reading puts the declaration order
+/// back, so a value written and read again is the same value — and writing that
+/// value again produces the same bytes, because the writer re-sorts.
 fn read_struct_fields(
   r : Reader,
   meta : StructMeta,
 ) -> Array[(String, Value)] raise {
   read_fields_into(r, meta, [])
+}
+
+///|
+/// Put a struct's fields back in the order the schema declares them.
+///
+/// The permutation is done in place, and that is not an optimisation: a cycle
+/// reaches a struct that is still being read, and the node it points at has to
+/// be the same array that the finished struct carries. Reordering a copy would
+/// leave a reference pointing at one order and the value at another.
+fn declared_order(meta : StructMeta, fields : Array[(String, Value)]) -> Unit {
+  if fields.length() < 2 {
+    return
+  }
+  let declared : Array[(String, Value)] = []
+  for field in meta.fields() {
+    for pair in fields {
+      if pair.0 == field.name() {
+        declared.push(pair)
+        break
+      }
+    }
+  }
+  // A field the wire did not carry, or one it carried twice, leaves the order
+  // alone rather than dropping what was read.
+  if declared.length() != fields.length() {
+    return
+  }
+  for i in 0..<fields.length() {
+    fields[i] = declared[i]
+  }
 }
 
 ///|
@@ -868,6 +907,7 @@ fn read_fields_into(
     }
     out.push((field.name(), value))
   }
+  declared_order(meta, out)
   r.leave()
   out
 }
