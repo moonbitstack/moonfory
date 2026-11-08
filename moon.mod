@@ -13,10 +13,19 @@ keywords = [
   "apache-fory",
   "fury",
   "serialization",
+  "deserialize",
+  "serializer",
+  "marshal",
   "binary",
+  "binary-format",
+  "data-format",
   "cross-language",
   "xlang",
+  "interop",
   "row-format",
+  "object-graph",
+  "schema",
+  "struct",
   "codec",
   "moonbit",
 ]
@@ -24,8 +33,8 @@ keywords = [
 description = "The Fory cross-language binary format for MoonBit."
 
 import {
-  "moonbitstack/moonvar@0.2.1",
-  "moonbitstack/moondate@0.1.4",
+  "moonbitstack/moonvar@0.2.2",
+  "moonbitstack/moondate@0.1.5",
   "moonbitstack/moonmodel@0.1.3",
   "moonbitstack/moonbase@0.4.3",
 }
