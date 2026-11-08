@@ -77,10 +77,11 @@
 }</pre>
         </div>
         <p>
-          The package is reached as <code>@lib</code>. Its dependencies are
-          <code>moonbitstack/moonvar</code> for the numbers and
-          <code>moonbitstack/moondate</code> for the time types; nothing else is
-          pulled in.
+          The package is reached as <code>@moonfory</code>. Its dependencies are
+          <code>moonbitstack/moonvar</code> for the numbers,
+          <code>moonbitstack/moondate</code> for the time types and
+          <code>moonbitstack/moonmodel</code> for the description of a struct;
+          nothing else is pulled in.
         </p>
 
         <h2 id="verbs">The four verbs</h2>
@@ -92,11 +93,18 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> bytes <span class="tok-n">:</span> <span class="tok-n">Bytes</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(value)</span>
-<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span>     <span class="tok-n">=</span> <span class="tok-n">@moonfory.loads(bytes)</span>
+          <pre><span class="tok-c">// One value, all of it.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> message : Bytes = @moonfory.dumps(42)
+</span><span class="tok-k">let</span><span class="tok-n"> value : Int = @moonfory.loads(message)
+assert_eq(value, 42)
 
-<span class="tok-n">@moonfory.dump(value, buffer)</span>
-<span class="tok-k">let</span> value <span class="tok-n">:</span> <span class="tok-n">T</span> <span class="tok-n">=</span> <span class="tok-n">@moonfory.load(reader)</span></pre>
+</span><span class="tok-c">// The same, without allocating a fresh buffer.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> sink = Buffer()
+@moonfory.dump(value, sink)
+</span><span class="tok-k">let</span><span class="tok-n"> source = @moonfory.Reader::new(sink.to_bytes())
+source.read_head()
+</span><span class="tok-k">let</span><span class="tok-n"> replayed : Int = @moonfory.load(source)
+assert_eq(replayed, 42)</span></pre>
         </div>
         <table>
           <tr><th>Function</th><th>Takes</th><th>Gives</th></tr>
@@ -123,17 +131,25 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">ty</span>(<span class="tok-n">_self</span>) {
-  <span class="tok-n">TypeId::Int64</span>
+          <pre><span class="tok-k">struct</span><span class="tok-n"> UserId(Int64)
+
+</span><span class="tok-k">pub</span><span class="tok-n"> </span><span class="tok-k">impl</span><span class="tok-n"> @moonfory.Codec </span><span class="tok-k">for</span><span class="tok-n"> UserId </span><span class="tok-k">with</span><span class="tok-n"> </span><span class="tok-k">fn</span><span class="tok-n"> ty(_self) -&gt; @moonfory.TypeId {
+  @moonfory.TypeId::Int64
 }
 
-<span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">write_data</span>(<span class="tok-n">self</span>, <span class="tok-n">w</span>) {
-  <span class="tok-n">w.write_i64(self.0)</span>
+</span><span class="tok-k">pub</span><span class="tok-n"> </span><span class="tok-k">impl</span><span class="tok-n"> @moonfory.Codec </span><span class="tok-k">for</span><span class="tok-n"> UserId </span><span class="tok-k">with</span><span class="tok-n"> </span><span class="tok-k">fn</span><span class="tok-n"> write_data(
+  self,
+  w : @moonfory.Writer,
+) -&gt; Unit </span><span class="tok-k">raise</span><span class="tok-n"> {
+  w.write_i64(self.0)
 }
 
-<span class="tok-k">pub impl</span> <span class="tok-n">Codec</span> <span class="tok-k">for</span> <span class="tok-n">UserId</span> <span class="tok-k">with fn</span> <span class="tok-n">read_data</span>(<span class="tok-n">r</span>, <span class="tok-n">_ty</span>) {
-  <span class="tok-n">UserId(r.read_i64())</span>
-}</pre>
+</span><span class="tok-k">pub</span><span class="tok-n"> </span><span class="tok-k">impl</span><span class="tok-n"> @moonfory.Codec </span><span class="tok-k">for</span><span class="tok-n"> UserId </span><span class="tok-k">with</span><span class="tok-n"> </span><span class="tok-k">fn</span><span class="tok-n"> read_data(
+  r : @moonfory.Reader,
+  _ty : @moonfory.TypeId,
+) -&gt; UserId </span><span class="tok-k">raise</span><span class="tok-n"> {
+  UserId(r.read_i64())
+}</span></pre>
         </div>
         <p>
           <code>Bool</code>, <code>Int</code>, <code>Int64</code>, <code>UInt</code>,
@@ -150,7 +166,9 @@
           <tr><td>INT8 / INT16 / INT32</td><td>2 / 3 / 4</td><td><code>Byte</code> / <code>Int</code></td><td>two's complement, little-endian</td></tr>
           <tr><td>INT64</td><td>6</td><td><code>Int64</code></td><td>eight bytes</td></tr>
           <tr><td>VARINT32 / VARINT64</td><td>5 / 7</td><td>any signed width</td><td>zig-zag, base-128</td></tr>
-          <tr><td>TAGGED_INT64 / UINT64</td><td>8 / 15</td><td><code>Int64</code> / <code>UInt64</code></td><td>four bytes when small, else nine</td></tr>
+          <tr><td>UINT8 / UINT16 / UINT32</td><td>9 / 10 / 11</td><td><code>UInt</code></td><td>unsigned, little-endian</td></tr>
+          <tr><td>UINT64</td><td>13</td><td><code>UInt64</code></td><td>eight bytes</td></tr>
+          <tr><td>TAGGED_INT64 / TAGGED_UINT64</td><td>8 / 15</td><td>—</td><td>four bytes when small, else nine</td></tr>
           <tr><td>FLOAT32 / FLOAT64</td><td>19 / 20</td><td><code>Float</code> / <code>Double</code></td><td>IEEE 754, little-endian</td></tr>
           <tr><td>STRING</td><td>21</td><td><code>String</code></td><td>length-and-encoding header, then UTF-8</td></tr>
           <tr><td>LIST / SET</td><td>22 / 23</td><td><code>Array[T]</code></td><td>count, element header, elements</td></tr>
@@ -188,20 +206,25 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> point <span class="tok-n">=</span> <span class="tok-n">@moonfory.StructMeta::new(</span><span class="tok-s">"Point"</span>, <span class="tok-n">100</span>, [
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"x"</span>, <span class="tok-n">@moonfory.TypeId::VarInt32)</span>,
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"y"</span>, <span class="tok-n">@moonfory.TypeId::VarInt32)</span>,
+          <pre><span class="tok-k">let</span><span class="tok-n"> point = @moonfory.StructMeta::new(</span><span class="tok-s">"Point"</span><span class="tok-n">, 100, [
+  @moonfory.FieldMeta::new(</span><span class="tok-s">"x"</span><span class="tok-n">, @moonfory.TypeId::VarInt32),
+  @moonfory.FieldMeta::new(</span><span class="tok-s">"y"</span><span class="tok-n">, @moonfory.TypeId::VarInt32),
 ])
 
-<span class="tok-k">let</span> person <span class="tok-n">=</span> <span class="tok-n">@moonfory.StructMeta::new(</span><span class="tok-s">"Person"</span>, <span class="tok-n">101</span>, [
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"name"</span>, <span class="tok-n">@moonfory.TypeId::String)</span>,
-  <span class="tok-c">// a list says what it holds: the writer may leave it out of the header</span>
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"tags"</span>, <span class="tok-n">@moonfory.TypeId::List</span>,
-    <span class="tok-n">element=Some(</span><span class="tok-n">@moonfory.TypeId::String))</span>,
-  <span class="tok-c">// a declared field sends no type ID, so the schema says which struct it is</span>
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"home"</span>, <span class="tok-n">@moonfory.TypeId::Struct</span>,
-    <span class="tok-n">nullable=true, child=Some(point))</span>,
-])</pre>
+</span><span class="tok-k">let</span><span class="tok-n"> person = @moonfory.StructMeta::new(</span><span class="tok-s">"Person"</span><span class="tok-n">, 101, [
+  @moonfory.FieldMeta::new(</span><span class="tok-s">"name"</span><span class="tok-n">, @moonfory.TypeId::String),
+  @moonfory.FieldMeta::new(</span><span class="tok-s">"age"</span><span class="tok-n">, @moonfory.TypeId::VarInt32),
+  </span><span class="tok-c">// A list says what it holds, because the writer may leave the element type</span><span class="tok-n">
+  </span><span class="tok-c">// out of the header.</span><span class="tok-n">
+  @moonfory.FieldMeta::new(
+    </span><span class="tok-s">"tags"</span><span class="tok-n">, @moonfory.TypeId::List, element=Some(@moonfory.TypeId::String),
+  ),
+  </span><span class="tok-c">// A field whose type is declared sends no type ID, so the schema has to say</span><span class="tok-n">
+  </span><span class="tok-c">// which struct it is.</span><span class="tok-n">
+  @moonfory.FieldMeta::new(
+    </span><span class="tok-s">"home"</span><span class="tok-n">, @moonfory.TypeId::Struct, nullable=</span><span class="tok-k">true</span><span class="tok-n">, child=Some(point),
+  ),
+])</span></pre>
         </div>
         <p>
           From a <code>#model.derive</code> model, <code>StructMeta::of</code> fills
@@ -249,9 +272,26 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-n">@moonfory.dumps(v, track_ref=true)</span>
-<span class="tok-n">@moonfory.dumps(v, config=my_config, depth=8)</span>
-<span class="tok-n">@moonfory.dumps(v, config=my_config, xlang=false, clash=Panic)</span></pre>
+          <pre><span class="tok-c">// The preset, with one field changed.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> tracked = @moonfory.dumps(@moonfory.Value::Int(1L), track_ref=</span><span class="tok-k">true</span><span class="tok-n">)
+
+</span><span class="tok-c">// A whole config, with one field overridden on top of it.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> base = @moonfory.Config::new(depth=9)
+</span><span class="tok-k">let</span><span class="tok-n"> deeper = @moonfory.dumps(@moonfory.Value::Int(1L), config=base, depth=8)
+
+</span><span class="tok-c">// Two settings that disagree: refused, rather than silently picked.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> refused = </span><span class="tok-k">try</span><span class="tok-n"> {
+  @moonfory.dumps(
+    @moonfory.Value::Int(1L),
+    config=base,
+    xlang=</span><span class="tok-k">false</span><span class="tok-n">,
+    clash=@moonfory.OnClash::Panic,
+  )
+} </span><span class="tok-k">catch</span><span class="tok-n"> {
+  @moonfory.Clashed(_) =&gt; b</span><span class="tok-s">""</span><span class="tok-n">
+  failure =&gt; </span><span class="tok-k">raise</span><span class="tok-n"> failure
+}
+assert_eq(refused.length(), 0)</span></pre>
         </div>
 
         <h2 id="refs">Shared and circular values</h2>
@@ -263,18 +303,21 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> node <span class="tok-n">=</span> <span class="tok-n">@moonfory.StructMeta::new(</span><span class="tok-s">"Node"</span>, <span class="tok-n">300</span>, [
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"val"</span>, <span class="tok-n">@moonfory.TypeId::VarInt32)</span>,
-  <span class="tok-n">@moonfory.FieldMeta::new(</span><span class="tok-s">"next"</span>, <span class="tok-n">@moonfory.TypeId::Struct</span>, <span class="tok-n">track_ref=true)</span>,
+          <pre><span class="tok-k">let</span><span class="tok-n"> node = @moonfory.StructMeta::new(</span><span class="tok-s">"Node"</span><span class="tok-n">, 300, [
+  @moonfory.FieldMeta::new(</span><span class="tok-s">"val"</span><span class="tok-n">, @moonfory.TypeId::VarInt32),
+  @moonfory.FieldMeta::new(</span><span class="tok-s">"next"</span><span class="tok-n">, @moonfory.TypeId::Struct, track_ref=</span><span class="tok-k">true</span><span class="tok-n">),
 ])
 
-<span class="tok-c">// A node whose `next` is itself: reference zero is the root, which this is.</span>
-<span class="tok-k">let</span> value <span class="tok-n">=</span> <span class="tok-n">@moonfory.Value::Struct(node, [</span>
-  (<span class="tok-s">"val"</span>, <span class="tok-n">@moonfory.Value::Int(</span><span class="tok-n">1L</span>)),
-  (<span class="tok-s">"next"</span>, <span class="tok-n">@moonfory.Value::Pointer(</span><span class="tok-n">0</span>)),
+</span><span class="tok-c">// A node whose `next` is itself. Reference zero is the root, which this is.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> cyclic = @moonfory.Value::Struct(node, [
+  (</span><span class="tok-s">"val"</span><span class="tok-n">, @moonfory.Value::Int(1L)),
+  (</span><span class="tok-s">"next"</span><span class="tok-n">, @moonfory.Value::Pointer(0)),
 ])
 
-<span class="tok-n">@moonfory.dumps(value, track_ref=true)</span>  <span class="tok-c">// 01 00 1b ac02 eecb234f 02 fe 00</span></pre>
+</span><span class="tok-k">let</span><span class="tok-n"> cyclic_bytes = @moonfory.dumps(cyclic, track_ref=</span><span class="tok-k">true</span><span class="tok-n">)
+assert_eq(
+  cyclic_bytes, b</span><span class="tok-s">"\x01\x00\x1b\xac\x02\xee\xcb\x23\x4f\x02\xfe\x00"</span><span class="tok-n">,
+)</span></pre>
         </div>
         <p>
           Those are the bytes Go's <code>fory</code> writes for
@@ -287,9 +330,14 @@
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> once  <span class="tok-n">=</span> <span class="tok-n">@moonfory.shared(</span><span class="tok-n">7</span>, <span class="tok-s">"the same string"</span>)
-<span class="tok-k">let</span> twice <span class="tok-n">=</span> [once, once]   <span class="tok-c">// two references, one body</span>
-<span class="tok-k">let</span> bytes <span class="tok-n">=</span> <span class="tok-n">@moonfory.dumps(twice, track_ref=true)</span></pre>
+          <pre><span class="tok-k">let</span><span class="tok-n"> once = @moonfory.shared(7, </span><span class="tok-s">"the same string"</span><span class="tok-n">)
+</span><span class="tok-k">let</span><span class="tok-n"> twice = [once, once] </span><span class="tok-c">// two references, one body</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> shared_bytes = @moonfory.dumps(twice, track_ref=</span><span class="tok-k">true</span><span class="tok-n">)
+</span><span class="tok-k">let</span><span class="tok-n"> shared_back : Array[@moonfory.Shared[String]] = @moonfory.loads(
+  shared_bytes, track_ref=</span><span class="tok-k">true</span><span class="tok-n">,
+)
+assert_eq(shared_back.length(), 2)
+assert_eq(shared_back[1].value, </span><span class="tok-s">"the same string"</span><span class="tok-n">)</span></pre>
         </div>
         <p>
           Turn <code>track_ref</code> on for both ends, or neither: a reader that is
@@ -337,20 +385,21 @@ moon fmt</pre>
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> schema <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowSchema::new(</span>[
-  { <span class="tok-n">name:</span> <span class="tok-s">"id"</span>,   <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int64</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"name"</span>, <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::String</span>, <span class="tok-n">nullable:</span> <span class="tok-k">false</span> },
-  { <span class="tok-n">name:</span> <span class="tok-s">"age"</span>,  <span class="tok-n">ty:</span> <span class="tok-n">@moonfory.RowType::Int32</span>,  <span class="tok-n">nullable:</span> <span class="tok-k">true</span>  },
+          <pre><span class="tok-k">let</span><span class="tok-n"> schema = @moonfory.RowSchema::new([
+  { name: </span><span class="tok-s">"id"</span><span class="tok-n">, ty: @moonfory.RowType::Int64, nullable: </span><span class="tok-k">false</span><span class="tok-n"> },
+  { name: </span><span class="tok-s">"name"</span><span class="tok-n">, ty: @moonfory.RowType::String, nullable: </span><span class="tok-k">false</span><span class="tok-n"> },
+  { name: </span><span class="tok-s">"age"</span><span class="tok-n">, ty: @moonfory.RowType::Int32, nullable: </span><span class="tok-k">true</span><span class="tok-n"> },
 ])
 
-<span class="tok-k">let</span> row <span class="tok-n">=</span> <span class="tok-n">@moonfory.Row::new(schema)</span>
-<span class="tok-n">row.set(</span><span class="tok-n">0</span>, <span class="tok-n">@moonfory.RowValue::Int64(</span><span class="tok-n">7L</span>))
-<span class="tok-n">row.set(</span><span class="tok-n">1</span>, <span class="tok-n">@moonfory.RowValue::String(</span><span class="tok-s">"ada"</span>))
-<span class="tok-n">row.set(</span><span class="tok-n">2</span>, <span class="tok-n">@moonfory.RowValue::Null)
+</span><span class="tok-k">let</span><span class="tok-n"> row = @moonfory.Row::new(schema)
+row.set(0, @moonfory.RowValue::Int64(7L))
+row.set(1, @moonfory.RowValue::String(</span><span class="tok-s">"ada"</span><span class="tok-n">))
+row.set(2, @moonfory.RowValue::Null)
 
-<span class="tok-k">let</span> cur <span class="tok-n">=</span> <span class="tok-n">@moonfory.RowCursor::new(row.finish()[:], schema)</span>
-<span class="tok-n">cur.get_field(</span><span class="tok-n">1</span>)   <span class="tok-c">// RowValue::String("ada")</span>
-<span class="tok-n">cur.is_null(</span><span class="tok-n">2</span>)     <span class="tok-c">// true</span></pre>
+</span><span class="tok-k">let</span><span class="tok-n"> row_bytes = row.finish()
+</span><span class="tok-k">let</span><span class="tok-n"> cur = @moonfory.RowCursor::new(row_bytes[:], schema)
+assert_eq(cur.get_field(1), @moonfory.RowValue::String(</span><span class="tok-s">"ada"</span><span class="tok-n">))
+assert_eq(cur.is_null(2), </span><span class="tok-k">true</span><span class="tok-n">)</span></pre>
         </div>
         <p>
           The layout is the specification's standard variant: a null bitmap rounded
@@ -371,10 +420,22 @@ moon fmt</pre>
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
-          <pre><span class="tok-k">let</span> date   <span class="tok-n">=</span> <span class="tok-n">@moonfory.date_of_days(</span><span class="tok-n">19_000L</span>)              <span class="tok-c">// DATE</span>
-<span class="tok-k">let</span> moment <span class="tok-n">=</span> <span class="tok-n">@moonfory.moment_of_parts(</span><span class="tok-n">1_700_000_000L</span>, <span class="tok-n">0</span>) <span class="tok-c">// TIMESTAMP</span>
-<span class="tok-k">let</span> span   <span class="tok-n">=</span> <span class="tok-n">@moonfory.span_of_parts(</span><span class="tok-n">3L</span>, <span class="tok-n">500_000_000</span>)     <span class="tok-c">// DURATION</span>
-<span class="tok-n">@moonfory.dumps(moment)</span>                                     <span class="tok-c">// and back</span></pre>
+          <pre><span class="tok-k">let</span><span class="tok-n"> date = @moonfory.date_of_days(19_000L)
+</span><span class="tok-k">let</span><span class="tok-n"> moment = @moonfory.moment_of_parts(1_700_000_000L, 0)
+</span><span class="tok-k">let</span><span class="tok-n"> span = @moonfory.span_of_parts(3L, 500_000_000)
+
+assert_eq(
+  @moonfory.days_of_date(@moonfory.loads(@moonfory.dumps(date))), 19_000L,
+)
+</span><span class="tok-k">let</span><span class="tok-n"> (seconds, nanos) = @moonfory.parts_of_span(
+  @moonfory.loads(@moonfory.dumps(span)),
+)
+assert_eq(seconds, 3L)
+assert_eq(nanos, 500_000_000)
+</span><span class="tok-k">let</span><span class="tok-n"> (epoch, _) = @moonfory.parts_of_moment(
+  @moonfory.loads(@moonfory.dumps(moment)),
+)
+assert_eq(epoch, 1_700_000_000L)</span></pre>
         </div>
         <p>
           Nanoseconds are always the sub-second part, in <code>[0, 1e9)</code>, so a
