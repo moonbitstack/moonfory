@@ -5,8 +5,10 @@ binary format** that Java, Go, Python, Rust and C++ already read, and the **row
 format** that lets a reader take one field without building the object.
 
 ```moonbit
-let bytes = @moonfory.dumps(42)          // 01 ff 04 2a 00 00 00
-let back  : Int = @moonfory.loads(bytes)
+let bytes : Bytes = @moonfory.dumps(42)
+assert_eq(bytes, b"\x01\xff\x04\x2a\x00\x00\x00")
+let back : Int = @moonfory.loads(bytes)
+assert_eq(back, 42)
 ```
 
 The bytes are not this package's opinion. They are the ones
@@ -28,9 +30,9 @@ import {
 }
 ```
 
-Then `@lib` is the package. Dependencies are `moonbitstack/moonvar` for the
-numbers, `moonbitstack/moondate` for the time types, and
-`moonbitstack/moonmodel` for the description of a struct.
+The package is reached as `@moonfory`. Its dependencies are
+`moonbitstack/moonvar` for the numbers, `moonbitstack/moondate` for the time
+types, and `moonbitstack/moonmodel` for the description of a struct.
 
 The tests need one more, `moonbitstack/moonbase/base16`, because a fixture is
 read and written as hex and hex is not this package's business: it does not
@@ -38,10 +40,16 @@ export `hex` or `unhex`.
 
 ## Documentation
 
-- [The site](https://moonbitstack.github.io/moonfory/) — the guide, the
-  annotated byte examples and the reference.
+- [The site](https://moonbitstack.github.io/moonfory/) — the front page and the
+  annotated byte examples.
+- [The guide](https://moonbitstack.github.io/moonfory/docs.html) — the whole
+  interface on one page, install to errors.
 - [API reference](https://moonbitstack.github.io/moonfory/api/) — one page per
   public item, generated from the interface and the doc comments below.
+- [mooncakes](https://mooncakes.io/docs/moonbitstack/moonfory) — the published
+  module and its versions.
+- [The skill](https://mooncakes.io/skills/moonbitstack/moonfory) — the same
+  knowledge, written for the agent that is about to call it.
 
 ## Two entry points, four verbs
 
@@ -51,12 +59,17 @@ what you want when a message is one part of a larger stream.
 
 ```moonbit
 // One value, all of it.
-let bytes : Bytes = @moonfory.dumps(value)
-let value : T     = @moonfory.loads(bytes)
+let message : Bytes = @moonfory.dumps(42)
+let value : Int = @moonfory.loads(message)
+assert_eq(value, 42)
 
 // The same, without allocating a fresh buffer.
-@moonfory.dump(value, buffer)
-let value : T = @moonfory.load(reader)
+let sink = Buffer()
+@moonfory.dump(value, sink)
+let source = @moonfory.Reader::new(sink.to_bytes())
+source.read_head()
+let replayed : Int = @moonfory.load(source)
+assert_eq(replayed, 42)
 ```
 
 | Function | Takes | Gives |
@@ -80,17 +93,36 @@ element and a struct field can each name their own type without the body
 repeating it.
 
 ```moonbit
-pub impl Codec for UserId with fn ty(_self) {
-  TypeId::Int64
+struct UserId(Int64)
+
+pub impl @moonfory.Codec for UserId with fn ty(_self) -> @moonfory.TypeId {
+  @moonfory.TypeId::Int64
 }
 
-pub impl Codec for UserId with fn write_data(self, w) {
+pub impl @moonfory.Codec for UserId with fn write_data(
+  self,
+  w : @moonfory.Writer,
+) -> Unit raise {
   w.write_i64(self.0)
 }
 
-pub impl Codec for UserId with fn read_data(r, _ty) {
+pub impl @moonfory.Codec for UserId with fn read_data(
+  r : @moonfory.Reader,
+  _ty : @moonfory.TypeId,
+) -> UserId raise {
   UserId(r.read_i64())
 }
+```
+
+The type is now a message of its own, and the type ID in front of it is the one
+`ty` returned:
+
+```moonbit
+let user = UserId(7L)
+let id_bytes = @moonfory.dumps(user)
+assert_eq(id_bytes, b"\x01\xff\x06\x07\x00\x00\x00\x00\x00\x00\x00")
+let same : UserId = @moonfory.loads(id_bytes)
+assert_eq(same.0, 7L)
 ```
 
 `Bool`, `Int`, `Int64`, `UInt`, `UInt64`, `Byte`, `Float`, `Double`, `String`,
@@ -104,7 +136,9 @@ pub impl Codec for UserId with fn read_data(r, _ty) {
 | INT8 / INT16 / INT32 | 2 / 3 / 4 | `Byte` / `Int` | two's complement, little-endian |
 | INT64 | 6 | `Int64` | eight bytes |
 | VARINT32 / VARINT64 | 5 / 7 | any signed width | zig-zag, base-128 |
-| TAGGED_INT64 / UINT64 | 8 / 15 | `Int64` / `UInt64` | four bytes when small, else nine |
+| UINT8 / UINT16 / UINT32 | 9 / 10 / 11 | `UInt` | unsigned, little-endian |
+| UINT64 | 13 | `UInt64` | eight bytes |
+| TAGGED_INT64 / TAGGED_UINT64 | 8 / 15 | — | four bytes when small, else nine |
 | FLOAT32 / FLOAT64 | 19 / 20 | `Float` / `Double` | IEEE 754, little-endian |
 | STRING | 21 | `String` | length-and-encoding header, then UTF-8 |
 | LIST / SET | 22 / 23 | `Array[T]` | count, element header, elements |
@@ -154,13 +188,25 @@ error, and `clash=Handle(f)` lets you arbitrate.
 
 ```moonbit
 // The preset, with one field changed.
-@moonfory.dumps(v, track_ref=true)
+let tracked = @moonfory.dumps(@moonfory.Value::Int(1L), track_ref=true)
 
-// A whole config, then one field overridden on top of it.
-@moonfory.dumps(v, config=my_config, depth=8)
+// A whole config, with one field overridden on top of it.
+let base = @moonfory.Config::new(depth=9)
+let deeper = @moonfory.dumps(@moonfory.Value::Int(1L), config=base, depth=8)
 
-// Refuse rather than pick when the two disagree.
-@moonfory.dumps(v, config=my_config, xlang=false, clash=Panic)
+// Two settings that disagree: refused, rather than silently picked.
+let refused = try {
+  @moonfory.dumps(
+    @moonfory.Value::Int(1L),
+    config=base,
+    xlang=false,
+    clash=@moonfory.OnClash::Panic,
+  )
+} catch {
+  @moonfory.Clashed(_) => b""
+  failure => raise failure
+}
+assert_eq(refused.length(), 0)
 ```
 
 ## Describing a struct
@@ -193,13 +239,61 @@ let person = @moonfory.StructMeta::new("Person", 101, [
 ])
 ```
 
-From a `#model.derive` model, `StructMeta::of` fills the type IDs from the
-description's kinds, and takes the child schemas by name:
+A `Value` under that schema writes its fields in Fory order — the primitives
+that cannot be absent first, then the rest — whatever order the caller listed
+them in, and reading hands them back in the order the wire carried them:
 
 ```moonbit
-let meta = @moonfory.StructMeta::of(
-  model, user=101, children=[point], refs=["home"],
+let ada = @moonfory.Value::Struct(person, [
+  ("name", @moonfory.Value::Str("ada")),
+  ("age", @moonfory.Value::Int(36L)),
+  (
+    "tags",
+    @moonfory.Value::List(@moonfory.TypeId::List, [
+      @moonfory.Value::Str("math"),
+    ]),
+  ),
+  ("home", @moonfory.Value::Struct(point, [
+    ("x", @moonfory.Value::Int(1L)),
+    ("y", @moonfory.Value::Int(2L)),
+  ])),
+])
+let ada_bytes = @moonfory.dumps(ada)
+let read_back : @moonfory.Value = @moonfory.loads(
+  ada_bytes, schemas=[person, point],
 )
+assert_eq(
+  read_back,
+  @moonfory.Value::Struct(person, [
+    ("age", @moonfory.Value::Int(36L)),
+    ("home", @moonfory.Value::Struct(point, [
+      ("x", @moonfory.Value::Int(1L)),
+      ("y", @moonfory.Value::Int(2L)),
+    ])),
+    ("name", @moonfory.Value::Str("ada")),
+    ("tags", @moonfory.Value::List(@moonfory.TypeId::List, [
+      @moonfory.Value::Str("math"),
+    ])),
+  ]),
+)
+// The same order out as in: a value read and written again is the same bytes.
+assert_eq(@moonfory.dumps(read_back), ada_bytes)
+```
+
+`StructMeta::of` takes the `@moonmodel.Model` that `#model.derive` generates,
+fills the type IDs from the description's kinds, and takes the child schemas by
+name. A model built by hand is the same thing, which is what this block does:
+
+```moonbit
+let account = @moonmodel.Model::new("Account", [
+  @moonmodel.Field::new("id", @moonmodel.Int),
+  @moonmodel.Field::new("nick", @moonmodel.Text),
+])
+
+let account_meta = @moonfory.StructMeta::of(account, user=102, refs=["nick"])
+assert_eq(account_meta.name(), "Account")
+assert_eq(account_meta.user(), 102)
+assert_eq(account_meta.find("id").unwrap().ty, @moonfory.TypeId::VarInt32)
 ```
 
 A field's *description* is `FieldMeta::desc`, and `meta.model()` hands the whole
@@ -211,7 +305,8 @@ is refused rather than guessed at.
 
 Every struct carries a four-byte fingerprint of its schema, and a peer checks it
 against its own before it trusts a field. It is `identifier,typeID,ref,nullable;`
-per field, in identifier order, hashed with MurmurHash3 x64 128 seeded with 47.
+per field, in identifier order, and the number is the low half of MurmurHash3
+x64 128 over that text, seeded with 47.
 
 Two conventions had to be picked, because the reference implementations differ:
 a field of a user type writes `0` for its type ID and `0` for its ref flag
@@ -233,26 +328,35 @@ let node = @moonfory.StructMeta::new("Node", 300, [
 ])
 
 // A node whose `next` is itself. Reference zero is the root, which this is.
-let value = @moonfory.Value::Struct(node, [
+let cyclic = @moonfory.Value::Struct(node, [
   ("val", @moonfory.Value::Int(1L)),
   ("next", @moonfory.Value::Pointer(0)),
 ])
 
-@moonfory.dumps(value, track_ref=true)   // 01 00 1b ac02 eecb234f 02 fe 00
+let cyclic_bytes = @moonfory.dumps(cyclic, track_ref=true)
+assert_eq(
+  cyclic_bytes, b"\x01\x00\x1b\xac\x02\xee\xcb\x23\x4f\x02\xfe\x00",
+)
 ```
 
-Those are the bytes Go's `fory` writes for `struct Node { Val int32; Next *Node }`,
-byte for byte, and Go reads them back into a struct whose `Next` is itself. A
-value that comes back from a peer is the same shape: the node it starts at is a
-`Shared`, and the field that leads back to it is a `Pointer` to the same key, so
-the value can be held without holding itself and written again unchanged.
+Those are the bytes Go's `fory` writes for
+`struct Node { Val int32; Next *Node }`, byte for byte, and Go reads them back
+into a struct whose `Next` is itself. A value that comes back from a peer is the
+same shape: the node it starts at is a `Shared`, and the field that leads back to
+it is a `Pointer` to the same key, so the value can be held without holding
+itself and written again unchanged.
 
 A typed value is marked the same way, with `shared` for the writer's key:
 
 ```moonbit
 let once = @moonfory.shared(7, "the same string")
-let twice = [once, once]                    // two references, one body
-let bytes = @moonfory.dumps(twice, track_ref=true)
+let twice = [once, once] // two references, one body
+let shared_bytes = @moonfory.dumps(twice, track_ref=true)
+let shared_back : Array[@moonfory.Shared[String]] = @moonfory.loads(
+  shared_bytes, track_ref=true,
+)
+assert_eq(shared_back.length(), 2)
+assert_eq(shared_back[1].value, "the same string")
 ```
 
 Turn `track_ref` on for both ends, or neither: a reader that is not tracking
@@ -268,9 +372,9 @@ whether the field needs them or not, so field `i` is always at
 
 ```moonbit
 let schema = @moonfory.RowSchema::new([
-  { name: "id",   ty: @moonfory.RowType::Int64,  nullable: false },
+  { name: "id", ty: @moonfory.RowType::Int64, nullable: false },
   { name: "name", ty: @moonfory.RowType::String, nullable: false },
-  { name: "age",  ty: @moonfory.RowType::Int32,  nullable: true  },
+  { name: "age", ty: @moonfory.RowType::Int32, nullable: true },
 ])
 
 let row = @moonfory.Row::new(schema)
@@ -278,10 +382,10 @@ row.set(0, @moonfory.RowValue::Int64(7L))
 row.set(1, @moonfory.RowValue::String("ada"))
 row.set(2, @moonfory.RowValue::Null)
 
-let bytes = row.finish()
-let cur = @moonfory.RowCursor::new(bytes[:], schema)
-cur.get_field(1)                 // RowValue::String("ada"), field 0 never read
-cur.is_null(2)                   // true
+let row_bytes = row.finish()
+let cur = @moonfory.RowCursor::new(row_bytes[:], schema)
+assert_eq(cur.get_field(1), @moonfory.RowValue::String("ada"))
+assert_eq(cur.is_null(2), true)
 ```
 
 The layout is the specification's standard variant: a null bitmap rounded to
@@ -297,10 +401,22 @@ Through `moonbitstack/moondate`, so a MoonBit program never spells out epoch
 seconds:
 
 ```moonbit
-let date   = @moonfory.date_of_days(19_000L)                 // a Date, as DATE
-let moment = @moonfory.moment_of_parts(1_700_000_000L, 0)    // a Moment, as TIMESTAMP
-let span   = @moonfory.span_of_parts(3L, 500_000_000)        // a Span, as DURATION
-@moonfory.dumps(moment)                                      // and back through loads
+let date = @moonfory.date_of_days(19_000L)
+let moment = @moonfory.moment_of_parts(1_700_000_000L, 0)
+let span = @moonfory.span_of_parts(3L, 500_000_000)
+
+assert_eq(
+  @moonfory.days_of_date(@moonfory.loads(@moonfory.dumps(date))), 19_000L,
+)
+let (seconds, nanos) = @moonfory.parts_of_span(
+  @moonfory.loads(@moonfory.dumps(span)),
+)
+assert_eq(seconds, 3L)
+assert_eq(nanos, 500_000_000)
+let (epoch, _) = @moonfory.parts_of_moment(
+  @moonfory.loads(@moonfory.dumps(moment)),
+)
+assert_eq(epoch, 1_700_000_000L)
 ```
 
 Nanoseconds are always the sub-second part, in `[0, 1e9)`, so a value of 1.5
