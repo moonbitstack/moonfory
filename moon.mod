@@ -1,6 +1,6 @@
 name = "moonbitstack/moonfory"
 
-version = "0.1.3"
+version = "0.1.4"
 
 readme = "README.md"
 
@@ -34,9 +34,9 @@ description = "The Fory cross-language binary format for MoonBit."
 
 import {
   "moonbitstack/moonvar@0.2.2",
-  "moonbitstack/moondate@0.1.5",
-  "moonbitstack/moonmodel@0.1.3",
-  "moonbitstack/moonbase@0.4.3",
+  "moonbitstack/moondate@0.1.6",
+  "moonbitstack/moonmodel@0.1.4",
+  "moonbitstack/moonbase@0.4.4",
 }
 
 source = "src"
