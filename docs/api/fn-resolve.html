@@ -28,12 +28,9 @@
     <main class="docs">
       <aside class="rail" aria-label="Contents">
         <div class="grp">Configuration</div>
-        <a href="error-Clashed.html">Clashed</a>
         <a href="type-Config.html">Config</a>
         <a href="value-config.html">config</a>
-        <a href="type-OnClash.html">OnClash</a>
         <a href="fn-resolve.html" aria-current="page">resolve</a>
-        <a href="type-Wins.html">Wins</a>
         <div class="grp">All items</div>
         <a href="index.html">API index</a>
       </aside>
@@ -41,14 +38,14 @@
       <article class="article">
         <p class="eyebrow">API · fn</p>
         <h2>resolve</h2>
-        <p class="api-meta">Configuration · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/config.mbt#L246">config.mbt:246</a></p>
-        <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub fn resolve(Config?, Bool?, Bool?, Bool?, Int32?, Int32?, Int32?, Wins?, OnClash[Config]?) -&gt; Config raise</pre></div>
+        <p class="api-meta">Configuration · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/config.mbt#L93">config.mbt:93</a></p>
+        <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub fn resolve(Config?, Bool?, Bool?, Bool?, Int32?, Int32?, Int32?, @moonknob.Wins?, @moonknob.OnClash[Config]?) -&gt; Config</pre></div>
         <p>The configuration one call runs under.</p>
-        <p>The library preset is beaten by the record, and the record by this call's flat mirrors — unless <code>wins</code> says otherwise. A flat mirror that contradicts the record beside it is what <code>clash</code> arbitrates: taken silently by <code>wins</code>, refused, or handed to the caller's function as (the record, the two as one).</p>
+        <p>The library preset is beaten by the record, and the record by this call's flat mirrors, unless <code>wins</code> says otherwise; with no record, the preset stands in for it. A flat mirror whose value differs from the record's is what <code>clash</code> arbitrates: taken by <code>wins</code> silently or with a warning, aborted on, or handed to the caller's function. Both are <code>moonknob</code>'s.</p>
         <p class="api-src">Generated from <code>src/pkg.generated.mbti</code> and the doc comments beside this declaration.</p>
         <nav class="pager" aria-label="Previous and next">
-        <a class="prev" href="type-OnClash.html"><span>previous</span>OnClash</a>
-        <a class="next" href="type-Wins.html"><span>next</span>Wins</a>
+        <a class="prev" href="value-config.html"><span>previous</span>config</a>
+        <a class="next" href="type-TypeId.html"><span>next</span>TypeId</a>
         </nav>
       </article>
     </main>

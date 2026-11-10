@@ -44,10 +44,10 @@
       <article class="article">
         <p class="eyebrow">API · fn</p>
         <h2>loads</h2>
-        <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L626">codec.mbt:626</a></p>
-        <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub fn[T : Codec] loads(Bytes, schemas? : Array[StructMeta], config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : Wins, clash? : OnClash[Config]) -&gt; T raise</pre></div>
+        <p class="api-meta">Messages · defined at <a href="https://github.com/moonbitstack/moonfory/blob/master/src/codec.mbt#L625">codec.mbt:625</a></p>
+        <div class="code wrap"><button class="copy" data-copy>copy</button><pre>pub fn[T : Codec] loads(Bytes, schemas? : Array[StructMeta], config? : Config, xlang? : Bool, track_ref? : Bool, check_string? : Bool, depth? : Int32, fields? : Int32, graph? : Int32, wins? : @moonknob.Wins, clash? : @moonknob.OnClash[Config]) -&gt; T raise</pre></div>
         <p>Bytes as a value: the head is checked, the value is read, and the bytes left over are refused, because a message with two values in it is two messages.</p>
-        <p><code>schemas</code> is what the reader knows about structs: a struct arrives as a user type ID and nothing else. The configuration is the record, then this call's flat mirrors: the library preset is beaten by the record, and the record by the flat mirrors, unless <code>wins</code> says otherwise. A flat mirror that contradicts the record beside it is what <code>clash</code> arbitrates: taken silently by <code>wins</code>, refused, or handed to the caller's function as (the record, the two as one).</p>
+        <p><code>schemas</code> is what the reader knows about structs: a struct arrives as a user type ID and nothing else. The configuration is the record, then this call's flat mirrors: the library preset is beaten by the record, and the record by the flat mirrors, unless <code>wins</code> says otherwise. A flat mirror whose value differs from the record's is what <code>clash</code> arbitrates: taken by <code>wins</code> silently or with a warning, aborted on, or handed to the caller's function.</p>
         <p class="api-src">Generated from <code>src/pkg.generated.mbti</code> and the doc comments beside this declaration.</p>
         <nav class="pager" aria-label="Previous and next">
         <a class="prev" href="fn-load.html"><span>previous</span>load</a>

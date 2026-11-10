@@ -219,31 +219,45 @@ test "wins turns the order around" {
     None,
     None,
     None,
-    Some(@moonfory.Wins::Base),
+    Some(Base),
     None,
   )
   inspect(base.track_ref, content="false")
 }
 
 ///|
-test "a setting given twice is refused when the caller asks to hear about it" {
-  inspect(
-    outcome(fn() raise {
-      let _ = @moonfory.resolve(
-        Some(@moonfory.Config::new(track_ref=false)),
-        None,
-        Some(true),
-        None,
-        None,
-        None,
-        None,
-        None,
-        Some(@moonfory.OnClash::Panic),
-      )
-      ()
-    }),
-    content="Clashed(name=config)",
+test "panic a setting given twice with different values, when the caller asks" {
+  let _ = @moonfory.resolve(
+    Some(@moonfory.Config::new(track_ref=false)),
+    None,
+    Some(true),
+    None,
+    None,
+    None,
+    None,
+    None,
+    Some(Panic),
   )
+}
+
+///|
+test "a setting given twice can be reported and still taken" {
+  let said : Array[String] = []
+  let merged = @moonfory.resolve(
+    Some(@moonfory.Config::new(track_ref=false)),
+    None,
+    Some(true),
+    None,
+    None,
+    None,
+    None,
+    None,
+    Some(Warn(line => said.push(line))),
+  )
+  inspect(merged.track_ref, content="true")
+  assert_eq(said, [
+    "moonfory: the config and the flat arguments: track_ref given twice with different values",
+  ])
 }
 
 ///|
@@ -257,7 +271,7 @@ test "the same setting twice agreed on is not a clash" {
     None,
     None,
     None,
-    Some(@moonfory.OnClash::Panic),
+    Some(Panic),
   )
   inspect(same.track_ref, content="false")
 }
@@ -274,11 +288,11 @@ test "a setting given twice can be handed to the caller's own function" {
     None,
     None,
     Some(
-      @moonfory.OnClash::Handle(fn(record, merged) {
-        if record.depth > merged.depth {
-          record
+      Handle(clash => {
+        if clash.base.depth > clash.merged.depth {
+          clash.base
         } else {
-          merged
+          clash.merged
         }
       }),
     ),

@@ -183,8 +183,10 @@ value passed as `config=` replaces it wholesale. The flat mirrors — `xlang=`,
 `track_ref=`, `check_string=`, `depth=`, `fields=`, `graph=` — then override
 single fields of that result. When a `Config` and a flat mirror disagree, the
 flat mirror wins, unless `wins=Base` is passed, in which case the record wins.
-A disagreement is silent by default; `clash=Panic` turns it into a `Clashed`
-error, and `clash=Handle(f)` lets you arbitrate.
+A disagreement is silent by default; `clash=Warn(f)` passes a line about it to
+`f`, `clash=Panic` aborts, and `clash=Handle(f)` lets you arbitrate. `wins` and
+`clash` are [moonknob](https://github.com/moonbitstack/moonknob)'s, and work the
+same way in every library of the family.
 
 ```moonbit
 // The preset, with one field changed.
@@ -194,19 +196,15 @@ let tracked = @moonfory.dumps(@moonfory.Value::Int(1L), track_ref=true)
 let base = @moonfory.Config::new(depth=9)
 let deeper = @moonfory.dumps(@moonfory.Value::Int(1L), config=base, depth=8)
 
-// Two settings that disagree: refused, rather than silently picked.
-let refused = try {
-  @moonfory.dumps(
-    @moonfory.Value::Int(1L),
-    config=base,
-    xlang=false,
-    clash=@moonfory.OnClash::Panic,
-  )
-} catch {
-  @moonfory.Clashed(_) => b""
-  failure => raise failure
-}
-assert_eq(refused.length(), 0)
+// Two settings that disagree: taken as `wins` says, and reported.
+let said : Array[String] = []
+let reported = @moonfory.dumps(
+  @moonfory.Value::Int(1L),
+  config=base,
+  xlang=false,
+  clash=Warn(line => said.push(line)),
+)
+assert_eq(said.length(), 1)
 ```
 
 ## Describing a struct

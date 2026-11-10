@@ -272,9 +272,11 @@ assert_eq(replayed, 42)</span></pre>
           <code>graph=</code> — then override single fields of that result. When a
           <code>Config</code> and a flat mirror disagree, the flat mirror wins,
           unless <code>wins=Base</code> is passed, in which case the record wins. A
-          disagreement is silent by default; <code>clash=Panic</code> turns it into
-          a <code>Clashed</code> error, and <code>clash=Handle(f)</code> lets you
-          arbitrate.
+          disagreement is silent by default; <code>clash=Warn(f)</code> passes a
+          line about it to <code>f</code>, <code>clash=Panic</code> aborts, and
+          <code>clash=Handle(f)</code> lets you arbitrate. <code>wins</code> and
+          <code>clash</code> are moonknob's, the same in every library of the
+          family.
         </p>
         <div class="code">
           <button class="copy" data-copy>copy</button>
@@ -285,19 +287,15 @@ assert_eq(replayed, 42)</span></pre>
 </span><span class="tok-k">let</span><span class="tok-n"> base = @moonfory.Config::new(depth=9)
 </span><span class="tok-k">let</span><span class="tok-n"> deeper = @moonfory.dumps(@moonfory.Value::Int(1L), config=base, depth=8)
 
-</span><span class="tok-c">// Two settings that disagree: refused, rather than silently picked.</span><span class="tok-n">
-</span><span class="tok-k">let</span><span class="tok-n"> refused = </span><span class="tok-k">try</span><span class="tok-n"> {
-  @moonfory.dumps(
-    @moonfory.Value::Int(1L),
-    config=base,
-    xlang=</span><span class="tok-k">false</span><span class="tok-n">,
-    clash=@moonfory.OnClash::Panic,
-  )
-} </span><span class="tok-k">catch</span><span class="tok-n"> {
-  @moonfory.Clashed(_) =&gt; b</span><span class="tok-s">""</span><span class="tok-n">
-  failure =&gt; </span><span class="tok-k">raise</span><span class="tok-n"> failure
-}
-assert_eq(refused.length(), 0)</span></pre>
+</span><span class="tok-c">// Two settings that disagree: taken as `wins` says, and reported.</span><span class="tok-n">
+</span><span class="tok-k">let</span><span class="tok-n"> said : Array[String] = []
+</span><span class="tok-k">let</span><span class="tok-n"> reported = @moonfory.dumps(
+  @moonfory.Value::Int(1L),
+  config=base,
+  xlang=</span><span class="tok-k">false</span><span class="tok-n">,
+  clash=Warn(line =&gt; said.push(line)),
+)
+assert_eq(said.length(), 1)</span></pre>
         </div>
 
         <h2 id="refs">Shared and circular values</h2>

@@ -83,166 +83,13 @@ pub fn Config::new(
 }
 
 ///|
-/// Which of the two ways of giving a configuration wins when both are given.
-///
-/// `Extra` — the flat arguments — is the default, because a caller who took the
-/// trouble to write `track_ref=true` on one call means it on that call.
-#derive(Eq, Debug)
-pub(all) enum Wins {
-  /// The record wins: the flat arguments are ignored where they clash.
-  Base
-  /// The flat arguments win. The default.
-  Extra
-}
-
-///|
-pub extend Wins with Eq::{not_equal, equal}
-
-///|
-pub extend Wins with Debug::{to_repr}
-
-///|
-/// What to do when the same setting is given twice, once in the record and once
-/// as a flat argument.
-pub(all) enum OnClash[T] {
-  /// Take one of them silently: the one `wins` says.
-  Ignore
-  /// Refuse the call.
-  Panic
-  /// Let the caller decide. The pair is (the record's, the flat one's).
-  Handle((T, T) -> T)
-}
-
-///|
-/// The flat mirrors of a `Config`: each one is `None` when the caller did not
-/// give it, which is what tells a setting given once from a setting given twice.
-priv struct Patch {
-  xlang : Bool?
-  track_ref : Bool?
-  check_string : Bool?
-  depth : Int32?
-  fields : Int32?
-  graph : Int32?
-}
-
-///|
-/// What `OnClash::Panic` raises: a setting given twice where the caller asked
-/// to hear about it.
-#derive(Eq, Debug)
-pub(all) suberror Clashed {
-  /// The name of the setting, and the two values it was given.
-  Clashed(name~ : String)
-}
-
-///|
-pub impl Show for Clashed with fn output(self, logger) {
-  match self {
-    Clashed(name~) => logger.write_string("Clashed(name=\{name})")
-  }
-}
-
-///|
-pub extend Clashed with Debug::{to_repr}
-
-///|
-pub extend Clashed with Show::{to_string, output}
-
-///|
-pub extend Clashed with Eq::{not_equal, equal}
-
-///|
-/// Whether a flat mirror contradicts the record it was given beside.
-fn clashes(base : Config, patch : Patch) -> Bool {
-  match patch.xlang {
-    Some(v) => if v != base.xlang { return true }
-    None => ()
-  }
-  match patch.track_ref {
-    Some(v) => if v != base.track_ref { return true }
-    None => ()
-  }
-  match patch.check_string {
-    Some(v) => if v != base.check_string { return true }
-    None => ()
-  }
-  match patch.depth {
-    Some(v) => if v != base.depth { return true }
-    None => ()
-  }
-  match patch.fields {
-    Some(v) => if v != base.fields { return true }
-    None => ()
-  }
-  match patch.graph {
-    Some(v) => if v != base.graph { return true }
-    None => ()
-  }
-  false
-}
-
-///|
-/// The two as one, in the direction `wins` names: `Extra` takes the flat mirror,
-/// `Base` keeps the record.
-fn apply(base : Config, patch : Patch, wins : Wins) -> Config {
-  {
-    xlang: if wins == Extra {
-      match patch.xlang {
-        Some(v) => v
-        None => base.xlang
-      }
-    } else {
-      base.xlang
-    },
-    track_ref: if wins == Extra {
-      match patch.track_ref {
-        Some(v) => v
-        None => base.track_ref
-      }
-    } else {
-      base.track_ref
-    },
-    check_string: if wins == Extra {
-      match patch.check_string {
-        Some(v) => v
-        None => base.check_string
-      }
-    } else {
-      base.check_string
-    },
-    depth: if wins == Extra {
-      match patch.depth {
-        Some(v) => v
-        None => base.depth
-      }
-    } else {
-      base.depth
-    },
-    fields: if wins == Extra {
-      match patch.fields {
-        Some(v) => v
-        None => base.fields
-      }
-    } else {
-      base.fields
-    },
-    graph: if wins == Extra {
-      match patch.graph {
-        Some(v) => v
-        None => base.graph
-      }
-    } else {
-      base.graph
-    },
-  }
-}
-
-///|
 /// The configuration one call runs under.
 ///
 /// The library preset is beaten by the record, and the record by this call's
-/// flat mirrors — unless `wins` says otherwise. A flat mirror that contradicts
-/// the record beside it is what `clash` arbitrates: taken silently by `wins`,
-/// refused, or handed to the caller's function as (the record, the two as one).
+/// flat mirrors, unless `wins` says otherwise; with no record, the preset
+/// stands in for it. A flat mirror whose value differs from the record's is
+/// what `clash` arbitrates: taken by `wins` silently or with a warning,
+/// aborted on, or handed to the caller's function. Both are `moonknob`'s.
 pub fn resolve(
   config : Config?,
   xlang : Bool?,
@@ -251,28 +98,26 @@ pub fn resolve(
   depth : Int32?,
   fields : Int32?,
   graph : Int32?,
-  wins : Wins?,
-  clash : OnClash[Config]?,
-) -> Config raise {
+  wins : @moonknob.Wins?,
+  clash : @moonknob.OnClash[Config]?,
+) -> Config {
   let base = match config {
     Some(given) => given
     None => Config::new()
   }
-  let patch : Patch = { xlang, track_ref, check_string, depth, fields, graph, }
-  let wins = match wins {
-    Some(given) => given
-    None => Extra
+  let merge = @moonknob.Merge::new(wins.unwrap_or(Extra))
+  let merged = {
+    xlang: merge.pick("xlang", base.xlang, xlang),
+    track_ref: merge.pick("track_ref", base.track_ref, track_ref),
+    check_string: merge.pick("check_string", base.check_string, check_string),
+    depth: merge.pick("depth", base.depth, depth),
+    fields: merge.pick("fields", base.fields, fields),
+    graph: merge.pick("graph", base.graph, graph),
   }
-  let merged = apply(base, patch, wins)
-  match clash {
-    Some(Ignore) => merged
-    Some(Panic) =>
-      if clashes(base, patch) {
-        raise Clashed::Clashed(name="config")
-      } else {
-        merged
-      }
-    Some(Handle(arbitrate)) => arbitrate(base, merged)
-    None => merged
-  }
+  merge.settle(
+    clash.unwrap_or(Ignore),
+    base,
+    merged,
+    "moonfory: the config and the flat arguments",
+  )
 }

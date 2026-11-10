@@ -19,6 +19,7 @@ import {
   "moonbitstack/moonvar/fixed",
   "moonbitstack/moondate",
   "moonbitstack/moonmodel",
+  "moonbitstack/moonknob",
 }
 
 // The fixture tests read and write hex, which the library itself does not

@@ -555,9 +555,9 @@ pub extend Value with Codec::{write_data, read_data}
 ///
 /// The configuration is the record, then this call's flat mirrors: the library
 /// preset is beaten by the record, and the record by the flat mirrors, unless
-/// `wins` says otherwise. A flat mirror that contradicts the record beside it is
-/// what `clash` arbitrates: taken silently by `wins`, refused, or handed to the
-/// caller's function as (the record, the two as one).
+/// `wins` says otherwise. A flat mirror whose value differs from the record's
+/// is what `clash` arbitrates: taken by `wins` silently or with a warning,
+/// aborted on, or handed to the caller's function.
 pub fn[T : Codec] dumps(
   value : T,
   config? : Config,
@@ -567,8 +567,8 @@ pub fn[T : Codec] dumps(
   depth? : Int32,
   fields? : Int32,
   graph? : Int32,
-  wins? : Wins,
-  clash? : OnClash[Config],
+  wins? : @moonknob.Wins,
+  clash? : @moonknob.OnClash[Config],
 ) -> Bytes raise {
   let w = Writer::new(
     config=resolve(
@@ -586,9 +586,9 @@ pub fn[T : Codec] dumps(
 ///
 /// The configuration is the record, then this call's flat mirrors: the library
 /// preset is beaten by the record, and the record by the flat mirrors, unless
-/// `wins` says otherwise. A flat mirror that contradicts the record beside it is
-/// what `clash` arbitrates: taken silently by `wins`, refused, or handed to the
-/// caller's function as (the record, the two as one).
+/// `wins` says otherwise. A flat mirror whose value differs from the record's
+/// is what `clash` arbitrates: taken by `wins` silently or with a warning,
+/// aborted on, or handed to the caller's function.
 pub fn[T : Codec] dump(
   value : T,
   buffer : Buffer,
@@ -599,8 +599,8 @@ pub fn[T : Codec] dump(
   depth? : Int32,
   fields? : Int32,
   graph? : Int32,
-  wins? : Wins,
-  clash? : OnClash[Config],
+  wins? : @moonknob.Wins,
+  clash? : @moonknob.OnClash[Config],
 ) -> Unit raise {
   let w = Writer::new(
     config=resolve(
@@ -619,10 +619,9 @@ pub fn[T : Codec] dump(
 /// `schemas` is what the reader knows about structs: a struct arrives as a user
 /// type ID and nothing else. The configuration is the record, then this call's
 /// flat mirrors: the library preset is beaten by the record, and the record by
-/// the flat mirrors, unless `wins` says otherwise. A flat mirror that
-/// contradicts the record beside it is what `clash` arbitrates: taken silently
-/// by `wins`, refused, or handed to the caller's function as (the record, the
-/// two as one).
+/// the flat mirrors, unless `wins` says otherwise. A flat mirror whose value
+/// differs from the record's is what `clash` arbitrates: taken by `wins`
+/// silently or with a warning, aborted on, or handed to the caller's function.
 pub fn[T : Codec] loads(
   bytes : Bytes,
   schemas~ : Array[StructMeta] = [],
@@ -633,8 +632,8 @@ pub fn[T : Codec] loads(
   depth? : Int32,
   fields? : Int32,
   graph? : Int32,
-  wins? : Wins,
-  clash? : OnClash[Config],
+  wins? : @moonknob.Wins,
+  clash? : @moonknob.OnClash[Config],
 ) -> T raise {
   let r = Reader::new(
     bytes,
