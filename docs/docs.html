@@ -475,10 +475,13 @@ assert_eq(epoch, 1_700_000_000L)</span></pre>
         <h2 id="not-here">What is deliberately not here</h2>
         <table>
           <tr><th>Thing</th><th>Why not</th></tr>
-          <tr><td>Named and compatible structs (26, 28, 29, 30)</td><td>they need a schema registry to reconcile two type definitions; that belongs with <code>moonmodel</code>, not inside a codec</td></tr>
+          <tr><td>Named and compatible structs (28, 29, 30)</td><td>they put a name or a schema version where this reader expects a user type ID, and reconciling either needs a schema registry</td></tr>
+          <tr><td>A named enum (26)</td><td>the type is named instead of numbered, and the name is what a registry resolves</td></tr>
           <tr><td>Union, typed union, named union (33, 34, 35)</td><td>no MoonBit type maps to one, and which branch a peer meant cannot be recovered without the registry the named form expects</td></tr>
-          <tr><td>Ext (31, 32)</td><td>another language's object graph, which needs a decoder this package does not have</td></tr>
-          <tr><td>FLOAT8 / FLOAT8_ARRAY (16, 52)</td><td>no peer in reach writes them; when one does, the table has the code</td></tr>
+          <tr><td>Ext and named ext (31, 32)</td><td>another language's object graph, which needs a decoder this package does not have</td></tr>
+          <tr><td>ARRAY (42)</td><td>a list whose element types travel on the elements; no peer in reach writes one</td></tr>
+          <tr><td>FLOAT8 / FLOAT8_ARRAY (16, 52)</td><td>no peer in reach writes them; when one does, the table has the code. FLOAT16 and BFLOAT16 are read, as doubles</td></tr>
+          <tr><td>Compatible mode</td><td>reconciling two versions of one schema is the registry again, and which version wins is the caller's decision</td></tr>
           <tr><td>Inferring which value is shared</td><td>identity is not in a MoonBit value; say <code>Shared</code>/<code>Pointer</code> and the wire follows</td></tr>
           <tr><td>Reading a struct without its schema</td><td>the schema is the user id's meaning; <code>loads(schemas=[...])</code> supplies it</td></tr>
         </table>

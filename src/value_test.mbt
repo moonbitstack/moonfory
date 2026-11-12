@@ -158,3 +158,32 @@ test "a nullable field carries a flag, and sorts after one that cannot be absent
   )
   inspect(@base16.encode(bytes), content="01ff1b031db9061208000000ff07000000")
 }
+
+///|
+/// The types this package does not read are refused by name rather than read as
+/// something of the right shape: a named struct or an enum by name puts a name
+/// where a user type ID would be, and a compatible struct carries a version the
+/// reader has no registry to reconcile.
+test "a type this package does not read is refused, not guessed at" {
+  for code in [26, 28, 29, 30, 31, 32, 33, 34, 35, 42] {
+    let bytes = @base16.decode("01ff" + hexadecimal_byte(code))
+    let outcome = try {
+      let _ : @moonfory.Value = @moonfory.loads(bytes)
+      "read"
+    } catch {
+      failure => failure.to_string()
+    } noraise {
+      _ => "read"
+    }
+    inspect(outcome.has_prefix("Unsupported"), content="true")
+  }
+}
+
+///|
+/// One byte, as two hexadecimal digits.
+fn hexadecimal_byte(code : Int32) -> String {
+  let digits : Array[String] = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f",
+  ]
+  digits[code >> 4] + digits[code & 15]
+}

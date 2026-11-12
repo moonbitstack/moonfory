@@ -414,15 +414,21 @@ carrying a negative nanosecond field.
 
 | Thing | Why not |
 |:--|:--|
-| Named and compatible structs (26, 28, 29, 30) | They need a schema registry to reconcile two type definitions; that belongs with `moonmodel`, not inside a codec |
+| Named and compatible structs (28, 29, 30) | They put a name or a schema version where this reader expects a user type ID, and reconciling either needs a schema registry; that belongs with `moonmodel`, not inside a codec |
+| A named enum (26) | The same: the type is named instead of numbered, and the name is what a registry resolves |
 | Union, typed union, named union (33, 34, 35) | No MoonBit type maps to one, and which branch a peer meant cannot be recovered without the registry the named form expects |
-| Ext (31, 32) | Another language's object graph, which needs a decoder this package does not have |
-| FLOAT8 / FLOAT8_ARRAY (16, 52) | No peer in reach writes them; when one does, the table has the code |
+| Ext and named ext (31, 32) | Another language's object graph, which needs a decoder this package does not have |
+| ARRAY (42) | A list whose element types travel on the elements; no peer in reach writes one, and the code is in the table for the day one does |
+| FLOAT8 / FLOAT8_ARRAY (16, 52) | No peer in reach writes them; when one does, the table has the code. FLOAT16 and BFLOAT16 are read, as doubles |
+| Compatible mode (schema evolution) | A reader that reconciles two versions of one schema is the registry again, and the version it picks is a decision the caller has to make |
 | Reading a struct without its schema | The schema is the user id's meaning; `loads(schemas=[...])` supplies it |
 | inferring which value is shared | Identity is not in a MoonBit value; say `Shared`/`Pointer` and the wire follows |
 
-Each refusal is a `Refused` variant with the offset that produced it, so a
-malformed message names where it stopped rather than "invalid input".
+Each of these is refused by name and not guessed at: a message that arrives
+with one of those type IDs is a `Refused::Unsupported` naming the code, rather
+than a value of the right shape and the wrong contents. Every refusal is a
+`Refused` variant with the offset that produced it, so a malformed message
+names where it stopped rather than "invalid input".
 
 ## Errors
 

@@ -336,12 +336,17 @@ pub fn read_body(r : Reader, ty : TypeId) -> Value raise {
       Duration(seconds, r.read_i32())
     }
     Decimal => read_decimal(r)
-    Struct | CompatibleStruct | NamedStruct | NamedCompatibleStruct =>
-      read_struct_body(r)
-    Enum | NamedEnum => {
+    Struct => read_struct_body(r)
+    Enum => {
       let user = r.read_var_u32().reinterpret_as_int()
       Enum(user, r.read_var_u32().reinterpret_as_int())
     }
+    // A named type and a compatible one put the name or the version where this
+    // reader expects a user type ID, and reconciling that needs the registry the
+    // named form is about. Read as a plain struct they would be a value of the
+    // right shape and the wrong contents, so they are refused by name.
+    NamedEnum | CompatibleStruct | NamedStruct | NamedCompatibleStruct =>
+      raise Refused::Unsupported(kind="type \{ty.code()}")
     Float8 => raise Refused::Unsupported(kind="float8")
     Array => raise Refused::Unsupported(kind="array")
     _ =>
@@ -358,9 +363,8 @@ pub fn read_body(r : Reader, ty : TypeId) -> Value raise {
 /// been read yet.
 fn read_body_of(r : Reader, ty : TypeId) -> Value raise {
   match ty {
-    Struct | CompatibleStruct | NamedStruct | NamedCompatibleStruct =>
-      read_struct_body(r)
-    Enum | NamedEnum => {
+    Struct => read_struct_body(r)
+    Enum => {
       let user = r.read_var_u32().reinterpret_as_int()
       Enum(user, r.read_var_u32().reinterpret_as_int())
     }
