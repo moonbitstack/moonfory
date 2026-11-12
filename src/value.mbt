@@ -500,7 +500,7 @@ fn write_list_body(w : Writer, items : Array[Value]) -> Unit raise {
 /// The list header as it is read: the count, then the flags, then the elements
 /// in whatever shape the flags describe.
 fn read_list_body(r : Reader, kind : TypeId) -> Value raise {
-  read_list_into(r, kind, [])
+  read_list_into(r, kind, [], None)
 }
 
 ///|
@@ -511,7 +511,7 @@ fn read_list_into(
   r : Reader,
   kind : TypeId,
   items : Array[Value],
-  declared~ : TypeId? = None,
+  declared : TypeId?,
 ) -> Value raise {
   let n = r.read_var_u32().reinterpret_as_int()
   r.spend(n)
@@ -883,7 +883,7 @@ fn read_fields_into(
       Some(id) if field.ty == List || field.ty == Set => {
         let items : Array[Value] = []
         r.set_node(id, List(field.ty, items))
-        read_list_into(r, field.ty, items, declared=field.element)
+        read_list_into(r, field.ty, items, field.element)
       }
       Some(id) if field.ty == Map => {
         let entries : Array[(Value, Value)] = []
@@ -894,7 +894,7 @@ fn read_fields_into(
         if field.ty == List || field.ty == Set {
           // A list is read under the element type its schema declares, which is
           // the type the writer may have left out of the header.
-          read_list_into(r, field.ty, [], declared=field.element)
+          read_list_into(r, field.ty, [], field.element)
         } else {
           read_body(r, field.ty)
         }

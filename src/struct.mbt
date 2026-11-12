@@ -63,14 +63,18 @@ pub extend FieldMeta with Eq::{not_equal, equal}
 /// `nullable` is a question about the value and goes into the description; a
 /// kind the description has no word for is written as `Raw`, and the type ID
 /// the caller gave stays the one it goes out as.
+///
+/// A tag, a child schema and an element type are passed only when the field has
+/// one: leaving the argument out is how a field says it has none, so the call
+/// reads `tag=3` or `child=point` with no `Some` around it.
 pub fn FieldMeta::new(
   name : String,
   ty : TypeId,
-  tag~ : Int32? = None,
+  tag? : Int32,
   nullable~ : Bool = false,
   track_ref~ : Bool = false,
-  child~ : StructMeta? = None,
-  element~ : TypeId? = None,
+  child? : StructMeta,
+  element? : TypeId,
 ) -> FieldMeta {
   {
     desc: @moonmodel.Field::new(name, ty.kind(), nullable~),
@@ -90,10 +94,10 @@ pub fn FieldMeta::new(
 /// the other side cannot name is a field neither side can read.
 pub fn FieldMeta::from(
   desc : @moonmodel.Field,
-  tag~ : Int32? = None,
+  tag? : Int32,
   track_ref~ : Bool = false,
-  child~ : StructMeta? = None,
-  element~ : TypeId? = None,
+  child? : StructMeta,
+  element? : TypeId,
 ) -> FieldMeta raise {
   { desc, ty: TypeId::of_kind(desc.kind), tag, track_ref, child, element, }
 }

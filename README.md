@@ -227,12 +227,12 @@ let person = @moonfory.StructMeta::new("Person", 101, [
   // A list says what it holds, because the writer may leave the element type
   // out of the header.
   @moonfory.FieldMeta::new(
-    "tags", @moonfory.TypeId::List, element=Some(@moonfory.TypeId::String),
+    "tags", @moonfory.TypeId::List, element=@moonfory.TypeId::String,
   ),
   // A field whose type is declared sends no type ID, so the schema has to say
   // which struct it is.
   @moonfory.FieldMeta::new(
-    "home", @moonfory.TypeId::Struct, nullable=true, child=Some(point),
+    "home", @moonfory.TypeId::Struct, nullable=true, child=point,
   ),
 ])
 ```

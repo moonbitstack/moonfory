@@ -28,7 +28,7 @@ test "a field's identifier is its tag when it has one, and its name otherwise" {
     content="http_server",
   )
   inspect(
-    @moonfory.FieldMeta::new("userName", @moonfory.TypeId::Int32, tag=Some(3)).identifier(),
+    @moonfory.FieldMeta::new("userName", @moonfory.TypeId::Int32, tag=3).identifier(),
     content="3",
   )
 }
@@ -100,14 +100,14 @@ test "a tagged field sorts before every untagged one" {
   inspect(
     order([
       @moonfory.FieldMeta::new("zebra", @moonfory.TypeId::Int32),
-      @moonfory.FieldMeta::new("apple", @moonfory.TypeId::Int32, tag=Some(0)),
+      @moonfory.FieldMeta::new("apple", @moonfory.TypeId::Int32, tag=0),
     ]),
     content="apple,zebra",
   )
   inspect(
     order([
-      @moonfory.FieldMeta::new("b", @moonfory.TypeId::Int32, tag=Some(2)),
-      @moonfory.FieldMeta::new("a", @moonfory.TypeId::Int32, tag=Some(1)),
+      @moonfory.FieldMeta::new("b", @moonfory.TypeId::Int32, tag=2),
+      @moonfory.FieldMeta::new("a", @moonfory.TypeId::Int32, tag=1),
     ]),
     content="a,b",
   )

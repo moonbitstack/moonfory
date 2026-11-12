@@ -38,13 +38,13 @@ fn fixture_person() -> @moonfory.StructMeta {
     @moonfory.FieldMeta::new(
       "tags",
       @moonfory.TypeId::List,
-      element=Some(@moonfory.TypeId::String),
+      element=@moonfory.TypeId::String,
     ),
     @moonfory.FieldMeta::new(
       "home",
       @moonfory.TypeId::Struct,
       nullable=true,
-      child=Some(fixture_point()),
+      child=fixture_point(),
     ),
   ])
 }

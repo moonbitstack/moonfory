@@ -159,7 +159,7 @@ test "fields come back in the order the schema declares, not the wire's" {
   let meta = @moonfory.StructMeta::new("Mixed", 211, [
     @moonfory.FieldMeta::new("name", @moonfory.TypeId::String),
     @moonfory.FieldMeta::new("age", @moonfory.TypeId::VarInt32),
-    @moonfory.FieldMeta::new("home", @moonfory.TypeId::Struct, child=Some(home)),
+    @moonfory.FieldMeta::new("home", @moonfory.TypeId::Struct, child=home),
   ])
   let value = @moonfory.Value::Struct(meta, [
     ("name", @moonfory.Value::Str("ada")),

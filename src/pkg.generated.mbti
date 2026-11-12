@@ -98,11 +98,11 @@ pub(all) struct FieldMeta {
   element : TypeId?
 }
 pub fn FieldMeta::equal(Self, Self) -> Bool
-pub fn FieldMeta::from(@moonmodel.Field, tag? : Int32?, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -> Self raise
+pub fn FieldMeta::from(@moonmodel.Field, tag? : Int32, track_ref? : Bool, child? : StructMeta, element? : TypeId) -> Self raise
 pub fn FieldMeta::identifier(Self) -> String
 pub fn FieldMeta::kind(Self) -> @moonmodel.Type
 pub fn FieldMeta::name(Self) -> String
-pub fn FieldMeta::new(String, TypeId, tag? : Int32?, nullable? : Bool, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -> Self
+pub fn FieldMeta::new(String, TypeId, tag? : Int32, nullable? : Bool, track_ref? : Bool, child? : StructMeta, element? : TypeId) -> Self
 pub fn FieldMeta::not_equal(Self, Self) -> Bool
 pub fn FieldMeta::nullable(Self) -> Bool
 pub fn FieldMeta::output(Self, &Logger) -> Unit

@@ -217,12 +217,12 @@ assert_eq(replayed, 42)</span></pre>
   </span><span class="tok-c">// A list says what it holds, because the writer may leave the element type</span><span class="tok-n">
   </span><span class="tok-c">// out of the header.</span><span class="tok-n">
   @moonfory.FieldMeta::new(
-    </span><span class="tok-s">"tags"</span><span class="tok-n">, @moonfory.TypeId::List, element=Some(@moonfory.TypeId::String),
+    </span><span class="tok-s">"tags"</span><span class="tok-n">, @moonfory.TypeId::List, element=@moonfory.TypeId::String,
   ),
   </span><span class="tok-c">// A field whose type is declared sends no type ID, so the schema has to say</span><span class="tok-n">
   </span><span class="tok-c">// which struct it is.</span><span class="tok-n">
   @moonfory.FieldMeta::new(
-    </span><span class="tok-s">"home"</span><span class="tok-n">, @moonfory.TypeId::Struct, nullable=</span><span class="tok-k">true</span><span class="tok-n">, child=Some(point),
+    </span><span class="tok-s">"home"</span><span class="tok-n">, @moonfory.TypeId::Struct, nullable=</span><span class="tok-k">true</span><span class="tok-n">, child=point,
   ),
 ])</span></pre>
         </div>

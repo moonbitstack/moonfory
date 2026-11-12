@@ -65,7 +65,7 @@
         <h3>Methods</h3>
         <div class="api-method" id="from">
         <h4><a class="anchor" href="#from">from</a></h4>
-        <div class="sig"><pre>fn FieldMeta::from(@moonmodel.Field, tag? : Int32?, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -&gt; Self raise</pre></div>
+        <div class="sig"><pre>fn FieldMeta::from(@moonmodel.Field, tag? : Int32, track_ref? : Bool, child? : StructMeta, element? : TypeId) -&gt; Self raise</pre></div>
         <p>The field a description asks for: its kind decides the type ID.</p>
         <p>A kind with no wire type — <code>Any</code>, or a <code>Raw</code> that does not name one of this format's own — is refused rather than guessed at, because a field whose type the other side cannot name is a field neither side can read.</p>
         </div>
@@ -86,9 +86,10 @@
         </div>
         <div class="api-method" id="new">
         <h4><a class="anchor" href="#new">new</a></h4>
-        <div class="sig"><pre>fn FieldMeta::new(String, TypeId, tag? : Int32?, nullable? : Bool, track_ref? : Bool, child? : StructMeta?, element? : TypeId?) -&gt; Self</pre></div>
+        <div class="sig"><pre>fn FieldMeta::new(String, TypeId, tag? : Int32, nullable? : Bool, track_ref? : Bool, child? : StructMeta, element? : TypeId) -&gt; Self</pre></div>
         <p>A field that is simply there, named by hand.</p>
         <p><code>nullable</code> is a question about the value and goes into the description; a kind the description has no word for is written as <code>Raw</code>, and the type ID the caller gave stays the one it goes out as.</p>
+        <p>A tag, a child schema and an element type are passed only when the field has one: leaving the argument out is how a field says it has none, so the call reads <code>tag=3</code> or <code>child=point</code> with no <code>Some</code> around it.</p>
         </div>
         <div class="api-method" id="nullable">
         <h4><a class="anchor" href="#nullable">nullable</a></h4>
