@@ -137,3 +137,54 @@ test "a field is found by name, which is how a reader reads the order it wants" 
   )
   inspect(meta.find("y") == None, content="true")
 }
+
+///|
+/// The three members a description has no word for are given when the field has
+/// one and left out when it does not: `tag=3`, not `tag=Some(3)`, and no
+/// `Some(None)` to mean the field simply has no tag.
+test "a member is passed at the call, and absence is the argument left out" {
+  let plain = @moonfory.FieldMeta::new("plain", @moonfory.TypeId::Int32)
+  inspect(plain.tag == None, content="true")
+  inspect(plain.child == None, content="true")
+  inspect(plain.element == None, content="true")
+  inspect(plain.identifier(), content="plain")
+
+  let point = @moonfory.StructMeta::new("Point", 100, [
+    @moonfory.FieldMeta::new("x", @moonfory.TypeId::VarInt32),
+  ])
+  let given = @moonfory.FieldMeta::new(
+    "home",
+    @moonfory.TypeId::Struct,
+    tag=7,
+    child=point,
+    element=@moonfory.TypeId::String,
+  )
+  inspect(given.tag == Some(7), content="true")
+  inspect(given.child == Some(point), content="true")
+  inspect(given.element == Some(@moonfory.TypeId::String), content="true")
+  // A field with a tag is identified by the tag, whatever its name is.
+  inspect(given.identifier(), content="7")
+}
+
+///|
+test "the same three members, from a description" {
+  let desc = @moonmodel.Field::new("id", @moonmodel.Int)
+  let bare = @moonfory.FieldMeta::from(desc)
+  inspect(bare.tag == None, content="true")
+  inspect(bare.child == None, content="true")
+  inspect(bare.element == None, content="true")
+  inspect(bare.ty.to_string(), content="VarInt32")
+
+  let point = @moonfory.StructMeta::new("Point", 100, [])
+  let given = @moonfory.FieldMeta::from(
+    desc,
+    tag=3,
+    track_ref=true,
+    child=point,
+    element=@moonfory.TypeId::VarInt32,
+  )
+  inspect(given.tag == Some(3), content="true")
+  inspect(given.child == Some(point), content="true")
+  inspect(given.element == Some(@moonfory.TypeId::VarInt32), content="true")
+  inspect(given.track_ref, content="true")
+}
