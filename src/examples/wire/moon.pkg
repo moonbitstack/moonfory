@@ -1,0 +1,8 @@
+// What this package writes, for another implementation to read back.
+pkgtype(kind: "executable")
+
+import {
+  "moonbitlang/core/bigint",
+  "moonbitstack/moonfory",
+  "moonbitstack/moonbase/base16",
+}

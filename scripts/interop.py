@@ -117,7 +117,6 @@ def main() -> int:
         "// the Python implementation wrote for a value of that class. The file is a",
         "// test file rather than a library one, because fixtures are not an",
         "// interface: nothing outside the test suite should be able to reach them.",
-        "// nothing outside the test suite should be able to reach them.",
         "",
         "///|",
         "let pyfory_fixtures : Array[(String, String)] = [",
@@ -126,7 +125,7 @@ def main() -> int:
         lines.append('  ("%s", "%s"),' % (name, text))
     lines.append("]")
     lines.append("")
-    out.write_text("\n".join(lines), encoding="utf-8")
+    out.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     print("wrote %s (%d fixtures)" % (out, len(rows)))
     return 0
 

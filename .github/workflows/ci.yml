@@ -88,3 +88,53 @@ jobs:
             echo "::error::docs/api is stale; run 'python3 scripts/api.py' and commit the result"
             exit 1
           fi
+
+  # Both directions against the two implementations the module interoperates
+  # with: the fixtures under src/ are messages Python and Go wrote, and this job
+  # writes them again from those peers at the pinned versions, then has both
+  # peers read the messages src/examples/wire writes. Replaying the checked-in
+  # bytes in the test suite cannot see a peer that changed its mind; this can.
+  interop:
+    permissions:
+      contents: read
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: scripts/go.mod
+          cache-dependency-path: scripts/go.sum
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: install moonbit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      # The peers are not dependencies of the module, so they live outside the
+      # interpreter the rest of the workflow uses.
+      - name: install pyfory, the Python peer
+        run: |
+          python3 -m venv "$RUNNER_TEMP/peer"
+          "$RUNNER_TEMP/peer/bin/pip" install pyfory==1.7.7
+          echo "$RUNNER_TEMP/peer/bin" >> "$GITHUB_PATH"
+
+      - name: the fixtures are what the peers write
+        run: |
+          moon update
+          python3 scripts/interop.py
+          (cd scripts && go run .)
+          moon fmt
+          git diff --exit-code src/fixtures_pyfory_test.mbt src/fixtures_go_test.mbt
+
+      - name: the peers read what this package writes
+        run: |
+          moon run src/examples/wire --target native > "$RUNNER_TEMP/wire.tsv"
+          python3 scripts/check_peer_reads.py "$RUNNER_TEMP/wire.tsv"
+          (cd scripts && go run ./check_peer_reads "$RUNNER_TEMP/wire.tsv")
