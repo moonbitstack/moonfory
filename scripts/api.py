@@ -87,6 +87,20 @@ DERIVED = {"equal", "not_equal", "to_repr", "to_string", "output"}
 # trait. They are documented on `Codec`, not on each implementor.
 TRAIT_IMPL = {"ty", "write_data", "read_data"}
 
+# Which trait prints a method that is skipped above. The trait has to be named
+# on the page — as a `#derive` or an `impl` — or the method would be missing
+# from the reference entirely, which is the failure this table catches.
+TRAIT_OF = {
+    "equal": "Eq",
+    "not_equal": "Eq",
+    "to_repr": "Debug",
+    "to_string": "Show",
+    "output": "Show",
+    "ty": "Codec",
+    "write_data": "Codec",
+    "read_data": "Codec",
+}
+
 
 # --------------------------------------------------------------------------
 # model
@@ -139,7 +153,9 @@ ITEM_RE = re.compile(r"^pub(?:\(all\))?\s+(struct|enum|suberror)\s+([A-Za-z_]\w*
 TRAIT_RE = re.compile(r"^pub(?:\((?:all|open)\))?\s+trait\s+([A-Za-z_]\w*)")
 FN_RE = re.compile(r"^pub\s+fn(?:\[[^\]]*\])?\s+([A-Za-z_]\w*)(?:::([A-Za-z_]\w*))?")
 LET_RE = re.compile(r"^pub\s+let\s+([A-Za-z_]\w*)\s*:\s*(.+)$")
-IMPL_RE = re.compile(r"^pub\s+impl(?:\[[^\]]*\])?\s+([A-Za-z_]\w*)\s+for\s+([A-Za-z_]\w*)")
+IMPL_RE = re.compile(
+    r"^pub\s+impl(?:\[[^\]]*\])?\s+([A-Za-z_]\w*)\s+for\s+((?:@[A-Za-z_]\w*\.)?[A-Za-z_]\w*)"
+)
 
 
 def depth(line: str) -> int:
@@ -471,6 +487,74 @@ def order(items: list[Item]) -> list[Item]:
         return (CATEGORY_ORDER.index(item.category), item.name.lower(), item.name)
 
     return sorted(items, key=key)
+
+
+# --------------------------------------------------------------------------
+# the check: nothing public may be missing from the pages
+
+
+def audit(lines: list[str], items: list[Item]) -> list[str]:
+    """Everything the reference has to explain, and whether it does.
+
+    A generator that silently drops a declaration is worse than one that fails:
+    the page still looks complete. So the interface is walked a second time,
+    independently of the page builder, and every public declaration is required
+    to be reachable from the pages they produce — an item page of its own, a
+    method on its type's page, or the `#derive`/`impl` line that prints it.
+    """
+    problems: list[str] = []
+    pages = {item.name: item for item in items}
+    for line in lines:
+        if not line.startswith("pub"):
+            continue
+        m = ITEM_RE.match(line)
+        if m:
+            if m.group(2) not in pages:
+                problems.append("no page for the type %s" % m.group(2))
+            continue
+        m = TRAIT_RE.match(line)
+        if m:
+            if m.group(1) not in pages:
+                problems.append("no page for the trait %s" % m.group(1))
+            continue
+        m = LET_RE.match(line)
+        if m:
+            if m.group(1) not in pages:
+                problems.append("no page for the value %s" % m.group(1))
+            continue
+        m = FN_RE.match(line)
+        if m:
+            owner, name = (m.group(1), m.group(2)) if m.group(2) else (None, m.group(1))
+            if owner is None:
+                if name not in pages:
+                    problems.append("no page for the function %s" % name)
+                continue
+            item = pages.get(owner)
+            if item is None:
+                problems.append("no page for %s::%s: %s is not a public item" % (owner, name, owner))
+                continue
+            if any(method.name == name for method in item.methods):
+                continue
+            trait = TRAIT_OF.get(name)
+            printed = item.derives + item.impls
+            if trait is None:
+                problems.append("%s::%s is on no page" % (owner, name))
+            elif not any(trait in line for line in printed):
+                problems.append(
+                    "%s::%s is left to %s, which the page does not print" % (owner, name, trait)
+                )
+            continue
+        if IMPL_RE.match(line):
+            continue
+        problems.append("the reader does not understand: %s" % line)
+
+    for item in items:
+        if not item.doc.strip():
+            problems.append("%s %s has no doc comment" % (item.label, item.name))
+        for method in item.methods:
+            if not method.doc.strip():
+                problems.append("%s::%s has no doc comment" % (item.name, method.name))
+    return problems
 
 
 # --------------------------------------------------------------------------
@@ -914,6 +998,12 @@ def main() -> int:
     items = order(attach_items())
     if not items:
         print("no public items found", file=sys.stderr)
+        return 1
+
+    problems = audit(MBTI.read_text(encoding="utf-8").splitlines(), items)
+    if problems:
+        for problem in problems:
+            print("api: %s" % problem, file=sys.stderr)
         return 1
 
     OUT.mkdir(parents=True, exist_ok=True)
