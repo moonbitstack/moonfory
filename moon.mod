@@ -34,10 +34,10 @@ description = "The Fory cross-language binary format for MoonBit."
 
 import {
   "moonbitstack/moonvar@0.2.2",
-  "moonbitstack/moondate@0.1.6",
+  "moonbitstack/moondate@0.1.7",
   "moonbitstack/moonmodel@0.1.4",
   "moonbitstack/moonknob@0.1.0",
-  "moonbitstack/moonbase@0.4.4",
+  "moonbitstack/moonbase@0.4.5",
 }
 
 source = "src"
