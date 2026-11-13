@@ -1,6 +1,6 @@
 name = "moonbitstack/moonfory"
 
-version = "0.1.5"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -37,7 +37,7 @@ import {
   "moonbitstack/moondate@0.1.7",
   "moonbitstack/moonmodel@0.1.4",
   "moonbitstack/moonknob@0.1.0",
-  "moonbitstack/moonbase@0.4.5",
+  "moonbitstack/moonbase@0.5.0",
 }
 
 source = "src"
